@@ -2,6 +2,7 @@ import './style.css'
 import javascriptLogo from './javascript.svg'
 import viteLogo from '/vite.svg'
 import { setupCounter } from './counter.js'
+import { sendMessage } from './sendMessage.js'
 
 document.querySelector('#app').innerHTML = `
   <div>
@@ -18,7 +19,13 @@ document.querySelector('#app').innerHTML = `
     <p class="read-the-docs">
       Click on the Vite logo to learn more
     </p>
+    <input id="userInput"/>
+    <button id="send" type="button">Send</button>
   </div>
 `
 
 setupCounter(document.querySelector('#counter'))
+
+document.getElementById('send').addEventListener('click', () => {
+  sendMessage(document.getElementById('userInput'))
+})
