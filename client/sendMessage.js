@@ -4,10 +4,12 @@ let retries = 10;
 /**
  *
  * @param {HTMLInputElement} ele
+ * @param {HTMLDivElement} messageBox
  */
-export function sendMessage(ele) {
+export function sendMessage(ele, messageBox) {
   console.log(`Sending message: ${ele.value}`);
   socket.send(ele.value);
+  messageBox.innerHTML = messageBox.innerHTML + `<p>${ele.value}</p>`
   ele.value = "";
 }
 

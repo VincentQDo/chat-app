@@ -19,6 +19,7 @@ document.querySelector('#app').innerHTML = `
     <p class="read-the-docs">
       Click on the Vite logo to learn more
     </p>
+    <div id="messageBox"></div>
     <input id="userInput"/>
     <button id="send" type="button">Send</button>
   </div>
@@ -27,5 +28,5 @@ document.querySelector('#app').innerHTML = `
 setupCounter(document.querySelector('#counter'))
 
 document.getElementById('send').addEventListener('click', () => {
-  sendMessage(document.getElementById('userInput'))
+  sendMessage(document.getElementById('userInput'), document.getElementById('messageBox'))
 })
