@@ -9,14 +9,15 @@ let retries = 10;
 export function sendMessage(ele, messageBox) {
   console.log(`Sending message: ${ele.value}`);
   socket.send(ele.value);
-  messageBox.innerHTML = messageBox.innerHTML + `<p>${ele.value}</p>`
   ele.value = "";
 }
 
 function setupConnection() {
   socket = new WebSocket("ws://localhost:8765");
   socket.onmessage = (event) => {
-    console.log(`Res from server: ${event}`);
+    console.log(`Res from server: `, event.data);
+    const messageBox = document.getElementById('messageBox')
+    messageBox.innerHTML = messageBox.innerHTML + `<p>${event.data}</p>`
   };
 
   socket.onopen = () => {
