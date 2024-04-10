@@ -8,26 +8,26 @@ allConnectedClients = set()
 
 
 async def hello(websocket):
+    sendMessageToAllClients(f"{websocket} connected")
     allConnectedClients.add(websocket)
-    for client in allConnectedClients:
-        print(">>> Client connected")
-        await client.send(f"{websocket} connected")
+
     try:
         while True:
             message = await websocket.recv()
-            print(allConnectedClients.__len__())
-            print(f"<<< {message}")
-
-            for client in allConnectedClients:
-                print(f">>> {message}")
-                print(client)
-                await client.send(message)
+            sendMessageToAllClients(message)
     except websockets.exceptions.ConnectionClosedError:
         print(f"Client {websocket} disconnected")
         pass
     finally:
         # Remove client from the connection pool when they disconnect
         allConnectedClients.remove(websocket)
+        sendMessageToAllClients(f"{websocket} disconnected")
+
+
+async def sendMessageToAllClients(message):
+    print(f">>> To All: {message}")
+    for client in allConnectedClients:
+        await client.send(message)
 
 
 async def main():
