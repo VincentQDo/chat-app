@@ -13,11 +13,11 @@ export function sendMessage(ele, messageBox) {
 }
 
 function setupConnection() {
-  socket = new WebSocket("ws://localhost:8765");
+  socket = new WebSocket(import.meta.env.VITE_WS_URL);
   socket.onmessage = (event) => {
     console.log(`Res from server: `, event.data);
-    const messageBox = document.getElementById('messageBox')
-    messageBox.innerHTML = messageBox.innerHTML + `<p>${event.data}</p>`
+    const messageBox = document.getElementById("messageBox");
+    messageBox.innerHTML = messageBox.innerHTML + `<p>${event.data}</p>`;
   };
 
   socket.onopen = () => {
@@ -28,9 +28,8 @@ function setupConnection() {
     console.log("Closed");
     setTimeout(() => {
       console.log("Trying to reconnect...");
-      retries--
-      if (retries > 0)
-        setupConnection();
+      retries--;
+      if (retries > 0) setupConnection();
     }, 5000);
   };
 }
