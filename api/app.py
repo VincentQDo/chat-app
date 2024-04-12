@@ -4,36 +4,32 @@ import websockets
 URL = "localhost"
 PORT = 8765
 
-allConnectedClients = set()
+clients = set()
 
 
-async def hello(websocket):
+async def handler(websocket):
     await sendMessageToAllClients(f"###CONNECTED### {websocket} connected")
-    allConnectedClients.add(websocket)
+    clients.add(websocket)
 
     try:
         while True:
             message = await websocket.recv()
             await sendMessageToAllClients(message)
-    except websockets.exceptions.ConnectionClosedError:
-        print(f"Client {websocket} disconnected")
-        pass
     finally:
         # Remove client from the connection pool when they disconnect
-        allConnectedClients.remove(websocket)
+        clients.remove(websocket)
         await sendMessageToAllClients(f"{websocket} disconnected")
 
 
 async def sendMessageToAllClients(message):
     print(f">>> To All: {message}")
-    for client in allConnectedClients:
-        await client.send(message)
+    websockets.broadcast(clients, message)
 
 
 async def main():
-    async with websockets.serve(hello, URL, PORT):
+    async with websockets.serve(handler, URL, PORT):
         print(f"Webosocket server started at {URL}:{PORT}")
-        await asyncio.Future()
+        await asyncio.Future()  # run forever
 
 
 if __name__ == "__main__":
