@@ -1,35 +1,44 @@
+#!/usr/bin/env python
+
 import asyncio
+import http
+import signal
 import websockets
 
-URL = "localhost"
-PORT = 8765
+PORT = 8080
 
 clients = set()
 
 
-async def handler(websocket):
-    await sendMessageToAllClients(f"###CONNECTED### {websocket} connected")
+async def handler(websocket: websockets.WebSocketServerProtocol):
+    websockets.broadcast(clients, f"{websocket.id} connected")
     clients.add(websocket)
 
     try:
         while True:
             message = await websocket.recv()
-            await sendMessageToAllClients(message)
+            websockets.broadcast(clients, message)
     finally:
         # Remove client from the connection pool when they disconnect
         clients.remove(websocket)
-        await sendMessageToAllClients(f"{websocket} disconnected")
+        websockets.broadcast(clients, f"{websocket.id} disconnected")
 
 
-async def sendMessageToAllClients(message):
-    print(f">>> To All: {message}")
-    websockets.broadcast(clients, message)
+async def health_check(path, request_headers):
+    print(request_headers)
+    if path == "/health":
+        return http.HTTPStatus.OK, [], b"OK\n"
 
 
 async def main():
-    async with websockets.serve(handler, URL, PORT):
-        print(f"Webosocket server started at {URL}:{PORT}")
-        await asyncio.Future()  # run forever
+    loop = asyncio.get_running_loop()
+    stop = loop.create_future()
+    loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
+    async with websockets.serve(
+        handler, host="", port=PORT, process_request=health_check
+    ):
+        print(f"Webosocket server started at {PORT}")
+        await stop
 
 
 if __name__ == "__main__":
