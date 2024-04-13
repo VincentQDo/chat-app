@@ -12,7 +12,11 @@ export function sendMessage(ele, messageBox) {
   ele.value = "";
 }
 
-function setupConnection() {
+/**
+ * 
+ * @param {() => void} onClickCallback 
+ */
+export function setupConnection(onClickCallback) {
   socket = new WebSocket(import.meta.env.VITE_WS_URL);
   socket.onmessage = (event) => {
     console.log(`Res from server: `, event.data);
@@ -22,6 +26,7 @@ function setupConnection() {
 
   socket.onopen = () => {
     console.log("Connected");
+    onClickCallback();
   };
 
   socket.onclose = () => {
@@ -34,6 +39,3 @@ function setupConnection() {
     }, 5000);
   };
 }
-
-// Initial connection set up
-setupConnection();
