@@ -1,0 +1,22 @@
+name: Deploy on Fly.io
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install fly CLI
+        run: curl -L https://fly.io/install.sh | sh
+
+      - name: Deploy
+        run: fly deploy
