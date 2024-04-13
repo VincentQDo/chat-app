@@ -17,7 +17,7 @@ function setupConnection() {
   socket.onmessage = (event) => {
     console.log(`Res from server: `, event.data);
     const messageBox = document.getElementById("messageBox");
-    messageBox.innerHTML = messageBox.innerHTML + `<p>${event.data}</p>`;
+    messageBox.innerHTML = messageBox.innerHTML + event.data;
   };
 
   socket.onopen = () => {
@@ -30,6 +30,7 @@ function setupConnection() {
       console.log("Trying to reconnect...");
       retries--;
       if (retries > 0) setupConnection();
+      else console.log("Failed to reconnect, server may be down...")
     }, 5000);
   };
 }
