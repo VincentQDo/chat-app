@@ -1,22 +1,41 @@
 import WebSocket, { WebSocketServer } from "ws";
 
-const wss = new WebSocketServer({
+class WebSocketServerExt extends WebSocketServer {
+  /**
+   * 
+   * @param {WebSocket.ServerOptions | undefined} options 
+   * @param {(() => void) | undefined} callback 
+   */
+  constructor(options = undefined, callback = undefined) {
+    super(options, callback);
+  }
+  broadcast = (msg) => {
+    this.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(msg);
+      }
+    });
+  };
+}
+
+const wss = new WebSocketServerExt({
   port: 8080,
   clientTracking: true,
   path: "/chat",
+
 });
+
+const msgHTML = (messageText) => `<p>${messageText}<p>`;
 
 wss.on("connection", (wsClient, req) => {
   const connectedMsg = `${req.socket.remoteAddress} connected`;
   console.log(connectedMsg);
+
   wss.clients.forEach((e) => e.send(connectedMsg));
   wsClient.on("message", (data) => {
     const strData = data.toString();
     console.log(`<<< ${strData}`);
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(strData);
-      }
-    });
+    console.log(`>>> ${msgHTML(strData)}`);
+    wss.broadcast(msgHTML(strData));
   });
 });

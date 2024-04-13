@@ -1,9 +1,10 @@
-FROM python:alpine3.19
+FROM node:lts-alpine3.19
 
-COPY requirements.txt .
+COPY package.json .
+COPY package-lock.json .
 
-RUN pip install -r requirements.txt
+RUN npm i
 
-COPY app.py .
+COPY app.js .
 
-CMD [ "python", "app.py" ]
+CMD [ "node", "app.js" ]
