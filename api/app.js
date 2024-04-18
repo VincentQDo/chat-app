@@ -28,10 +28,7 @@ const wss = new WebSocketServerExt({
 const msgHTML = (messageText) => `<p>${messageText}<p>`;
 
 wss.on("connection", (wsClient, req) => {
-  const connectedMsg = `${req.socket.remoteAddress} connected`;
-  console.log(connectedMsg);
-
-  wss.clients.forEach((e) => e.send(connectedMsg));
+  wss.broadcast(msgHTML(`${wss.clients.size} clients online`))
   wsClient.on("message", (data) => {
     const strData = data.toString();
     console.log(`<<< ${strData}`);
