@@ -13,8 +13,8 @@ export function sendMessage(ele, messageBox) {
 }
 
 /**
- * 
- * @param {() => void} onClickCallback 
+ *
+ * @param {() => void} onClickCallback
  */
 export function setupConnection(onClickCallback) {
   socket = new WebSocket(import.meta.env.VITE_WS_URL);
@@ -35,7 +35,7 @@ export function setupConnection(onClickCallback) {
       console.log("Trying to reconnect...");
       retries--;
       if (retries > 0) setupConnection();
-      else console.log("Failed to reconnect, server may be down...")
+      else console.log("Failed to reconnect, server may be down...");
     }, 5000);
   };
 }
