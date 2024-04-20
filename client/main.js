@@ -25,7 +25,7 @@ function login() {
 function updateAppState(userName) {
   document.querySelector("#app").innerHTML = userName ? app(userName) : login()
   if (userName) {
-    setupConnection(() => {
+    setupConnection(userName, () => {
       const buttonEle = document.getElementById("send");
       buttonEle.disabled = false;
       buttonEle.addEventListener("click", () => {

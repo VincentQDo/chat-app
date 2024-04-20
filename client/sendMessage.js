@@ -14,10 +14,12 @@ export function sendMessage(ele, messageBox) {
 
 /**
  *
+ * @param {string} userName
  * @param {() => void} onClickCallback
  */
-export function setupConnection(onClickCallback) {
-  socket = new WebSocket(import.meta.env.VITE_WS_URL);
+export function setupConnection(userName, onClickCallback) {
+  console.log(userName)
+  socket = new WebSocket(import.meta.env.VITE_WS_URL + `?userName=${userName}`);
   socket.onmessage = (event) => {
     console.log(`Res from server: `, event.data);
     const messageBox = document.getElementById("messageBox");
