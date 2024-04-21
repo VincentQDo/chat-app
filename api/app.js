@@ -30,17 +30,16 @@ const msgHTML = (messageText) => `<p>${messageText}<p>`;
 wss.on("connection", (wsClient, req) => {
   wsClient.isAuthenticated = false;
   wsClient.on("message", (data) => {
-    console.log("is user authenticated: ", wsClient.isAuthenticated);
     if (!wsClient.isAuthenticated) {
-      console.log("authenticating user");
       const jsonData = JSON.parse(data.toString());
-      console.log(jsonData)
       if (jsonData.userName === "Anna" || jsonData.userName === "Vince") {
         wsClient.isAuthenticated = true;
         wsClient.userName = jsonData.userName;
-        return wsClient.send("Successfully authenticated ", wsClient.userName);
+        console.log(`User ${jsonData.userName} authenticated`)
+        return wsClient.send(200);
       } else {
-        wsClient.send("Failed to authenticate");
+        console.log(`User ${jsonData.userName} failed authentication`)
+        wsClient.send(401);
         return wsClient.terminate();
       }
     }
