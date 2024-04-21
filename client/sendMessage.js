@@ -18,16 +18,19 @@ export function sendMessage(ele, messageBox) {
  * @param {() => void} onClickCallback
  */
 export function setupConnection(userName, onClickCallback) {
-  console.log(userName)
-  socket = new WebSocket(import.meta.env.VITE_WS_URL + `?userName=${userName}`);
+  /**
+   * @type {WebSocket}
+   */
+  socket = new WebSocket(import.meta.env.VITE_WS_URL);
   socket.onmessage = (event) => {
+    if (event.data === 'Failed to authenticate') retries = 0
     console.log(`Res from server: `, event.data);
     const messageBox = document.getElementById("messageBox");
     messageBox.innerHTML = messageBox.innerHTML + event.data;
   };
 
   socket.onopen = () => {
-    console.log("Connected");
+    socket.send(JSON.stringify({ userName: userName }))
     onClickCallback();
   };
 
