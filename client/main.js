@@ -9,7 +9,6 @@ function app(userName) {
     <input id="userInput"/>
     <button id="send" type="button" disabled>Send</button>
   </div>`;
-
 }
 
 function login() {
@@ -19,13 +18,16 @@ function login() {
     <input name="userNameInput" id="userNameInput"/>
     <button id="connect" type="button">Connect</button>
   </div>
-  `
+  `;
 }
 
 function updateAppState(userName) {
-  document.querySelector("#app").innerHTML = userName ? app(userName) : login()
+  const appEle = document.getElementById("app");
+  appEle.innerHTML = login();
   if (userName) {
-    setupConnection(userName, () => {
+    setupConnection(userName, (isAuthenticated) => {
+      if (isAuthenticated) appEle.innerHTML = app(userName);
+      else return;
       const buttonEle = document.getElementById("send");
       buttonEle.disabled = false;
       buttonEle.addEventListener("click", () => {
@@ -35,19 +37,21 @@ function updateAppState(userName) {
         );
       });
     });
-
   }
 }
 
-updateAppState('')
+function main() {
+  updateAppState("");
 
-const connecBtn = document.getElementById('connect')
-connecBtn.addEventListener('click', () => {
-  /**
-   * @type {HTMLInputElement}
-   */
-  const userNameInput = document.getElementById('userNameInput')
+  const connecBtn = document.getElementById("connect");
+  connecBtn.addEventListener("click", () => {
+    /**
+     * @type {HTMLInputElement}
+     */
+    const userNameInput = document.getElementById("userNameInput");
 
-  updateAppState(userNameInput.value ? userNameInput.value : '')
-})
+    updateAppState(userNameInput.value ? userNameInput.value : "");
+  });
+}
 
+main();

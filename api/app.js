@@ -29,7 +29,6 @@ const msgHTML = (messageText) => `<p>${messageText}<p>`;
 
 wss.on("connection", (wsClient, req) => {
   wsClient.isAuthenticated = false;
-  wss.broadcast(msgHTML(`${wss.clients.size} clients online`));
   wsClient.on("message", (data) => {
     console.log("is user authenticated: ", wsClient.isAuthenticated);
     if (!wsClient.isAuthenticated) {

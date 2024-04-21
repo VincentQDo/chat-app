@@ -1,6 +1,7 @@
 // global scope socket so sendMessage function can get it too
 let socket;
 let retries = 10;
+let isAuthenticated = false;
 /**
  *
  * @param {HTMLInputElement} ele
@@ -23,15 +24,21 @@ export function setupConnection(userName, onClickCallback) {
    */
   socket = new WebSocket(import.meta.env.VITE_WS_URL);
   socket.onmessage = (event) => {
-    if (event.data === 'Failed to authenticate') retries = 0
-    console.log(`Res from server: `, event.data);
-    const messageBox = document.getElementById("messageBox");
-    messageBox.innerHTML = messageBox.innerHTML + event.data;
+    console.log('is Authenticated: ', isAuthenticated)
+    console.log('server message: ', event.data)
+    if (isAuthenticated) {
+      onClickCallback(isAuthenticated);
+      console.log(`Res from server: `, event.data);
+      const messageBox = document.getElementById("messageBox");
+      messageBox.innerHTML = messageBox.innerHTML + event.data;
+    } else {
+      if (event.data === "Failed to authenticate") retries = 0;
+      else isAuthenticated = true;
+    }
   };
 
   socket.onopen = () => {
-    socket.send(JSON.stringify({ userName: userName }))
-    onClickCallback();
+    socket.send(JSON.stringify({ userName: userName }));
   };
 
   socket.onclose = () => {
