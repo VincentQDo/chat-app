@@ -27,14 +27,14 @@ export function setupConnection(userName, onClickCallback) {
     console.log('is Authenticated: ', isAuthenticated)
     console.log('server message: ', event.data)
     if (isAuthenticated) {
-      onClickCallback(isAuthenticated);
       console.log(`Res from server: `, event.data);
       const messageBox = document.getElementById("messageBox");
       messageBox.innerHTML = messageBox.innerHTML + event.data;
     } else {
-      if (event.data === "Failed to authenticate") retries = 0;
+      if (Number(event.data) === 401) retries = 0;
       else isAuthenticated = true;
     }
+    onClickCallback(isAuthenticated);
   };
 
   socket.onopen = () => {
@@ -43,11 +43,14 @@ export function setupConnection(userName, onClickCallback) {
 
   socket.onclose = () => {
     console.log("Closed");
-    setTimeout(() => {
-      console.log("Trying to reconnect...");
-      retries--;
-      if (retries > 0) setupConnection();
-      else console.log("Failed to reconnect, server may be down...");
-    }, 5000);
+    if (retries > 0) {
+      setTimeout(() => {
+        console.log("Trying to reconnect...");
+        retries--;
+        if (retries > 0) setupConnection();
+        else console.log("Failed to reconnect, server may be down...");
+      }, 5000);
+
+    }
   };
 }
