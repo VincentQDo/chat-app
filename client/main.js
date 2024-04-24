@@ -50,27 +50,29 @@ function updateAppState(userName) {
   appEle.innerHTML = login();
 
   if (userName) {
-    console.log("starting set up");
     setupConnection(userName, (isAuthenticated) => {
-      console.log("Starting authentication", isAuthenticated);
+      if (isAuthenticated && !isAlreadyAuthenticated) {
 
-      if (isAuthenticated) appEle.innerHTML = app(userName);
-      else {
+        isAlreadyAuthenticated = isAuthenticated;
+        appEle.innerHTML = app(userName);
+        const buttonEle = document.getElementById("send");
+        buttonEle.disabled = false;
+        buttonEle.addEventListener("click", () => {
+          sendMessage(
+            document.getElementById("userInput"),
+            document.getElementById("messageBox")
+          );
+        });
+      }
+      else if (!isAuthenticated) {
         appEle.innerHTML = login(isAuthenticated);
         return;
       }
-      const buttonEle = document.getElementById("send");
-      buttonEle.disabled = false;
-      buttonEle.addEventListener("click", () => {
-        sendMessage(
-          document.getElementById("userInput"),
-          document.getElementById("messageBox")
-        );
-      });
     });
   }
 }
 
+let isAlreadyAuthenticated = false;
 function main() {
   updateAppState();
 }
