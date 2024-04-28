@@ -55,6 +55,7 @@ function updateAppState(userName) {
 
         isAlreadyAuthenticated = isAuthenticated;
         appEle.innerHTML = app(userName);
+        localStorage.setItem('username', userName);
         const buttonEle = document.getElementById("send");
         buttonEle.disabled = false;
         buttonEle.addEventListener("click", () => {
@@ -74,7 +75,7 @@ function updateAppState(userName) {
 
 let isAlreadyAuthenticated = false;
 function main() {
-  updateAppState();
+  updateAppState(localStorage.getItem('username'));
 }
 
 main();
