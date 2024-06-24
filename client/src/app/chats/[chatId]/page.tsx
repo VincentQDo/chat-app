@@ -22,6 +22,10 @@ export default async function Chat({ params }: { params: { chatId: string } }) {
       messageId: "1l3kjfi",
     },
   ];
+
+  const handleSubmit = (e: any) => {
+    console.log(Object.fromEntries(new FormData(e.target).entries()));
+  };
   return (
     <div>
       <Link href="/chats">Back to convo List</Link>
@@ -32,6 +36,14 @@ export default async function Chat({ params }: { params: { chatId: string } }) {
           </p>
         </div>
       ))}
+
+      <form method="post" onSubmit={handleSubmit}>
+        <label>
+          Chat Message:
+          <input name="chatMsg"></input>
+        </label>
+        <button role="submit">Submit</button>
+      </form>
     </div>
   );
 }
