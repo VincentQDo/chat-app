@@ -3,7 +3,7 @@
 import Message from "@/components/Message";
 import { ChatMsg } from "@/models/ChatMsg";
 import Link from "next/link";
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 
 export default function Chat({ params }: { params: { chatId: string } }) {
   const convoData: ChatMsg[] = [
@@ -23,8 +23,31 @@ export default function Chat({ params }: { params: { chatId: string } }) {
     },
   ];
 
+
   const [messageList, setMessageList] = useState(convoData);
   const [userInput, setUserInput] = useState('');
+  const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    socketRef.current = new WebSocket('ws://localhost:8080/chat');
+
+    socketRef.current.onopen = () => {
+      console.log('Socket connection opened');
+    }
+
+    socketRef.current.onmessage = (event: MessageEvent<{ message: string }>) => {
+      const newMessage = event.data;
+      console.log(newMessage);
+    }
+
+    socketRef.current.onclose = () => {
+      console.log('websocket connectio nclosed')
+    }
+
+    return () => {
+      socketRef.current?.close();
+    }
+  }, []);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,9 +57,9 @@ export default function Chat({ params }: { params: { chatId: string } }) {
       role: 'self',
       userName: 'Vince',
       messageId: 'fjlkwe'
-    }
-    const updatedMsgList = [...messageList, newChatMsg];
-    setMessageList(updatedMsgList);
+    };
+    socketRef.current?.send(userInput);
+    setMessageList([...messageList, newChatMsg]);
   };
 
   const onChangeHandler = (e: ChangeEvent<HTMLInputElement>) => {
@@ -47,7 +70,7 @@ export default function Chat({ params }: { params: { chatId: string } }) {
     <div>
       <Link href="/chats">Back to convo List</Link>
       {messageList.map((e) => (
-        <Message message={e}></Message>
+        <Message message={e} key={e.messageId}></Message>
       ))}
 
       <form method="post" onSubmit={handleSubmit}>
