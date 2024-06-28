@@ -1,8 +1,8 @@
 "use client";
 
 import Message from "@/components/Message";
-import { ChatList } from "@/models/ChatList";
 import { ChatMsg } from "@/models/ChatMsg";
+import { fetchData } from "@/utils/ServerActions";
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 
@@ -13,21 +13,9 @@ export default function Chat({ params }: { params: { chatId: string } }) {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`http://localhost:8080/messagelist?chatid=${params.chatId}`);
-        if (!res.ok) {
-          throw new Error(`HTTP error ${res.status}: ${res.statusText}`)
-        }
-        const messageList = await res.json();
-        console.log(messageList);
-        setMessageList(messageList);
-      } catch (error) {
-        console.error('Error while getting messages', error);
-      }
-    }
-
-    fetchData();
+    fetchData((messageList: ChatMsg[]) => {
+      setMessageList(messageList);
+    }, params.chatId);
   }, [params.chatId]);
 
   useEffect(() => {
