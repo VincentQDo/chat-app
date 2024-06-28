@@ -14,6 +14,7 @@ export default function Chat({ params }: { params: { chatId: string } }) {
 
   useEffect(() => {
     fetchData((messageList: ChatMsg[]) => {
+      // TODO can't define the call back function in a client component like this because only server actions can be passed as call back to server actions
       setMessageList(messageList);
     }, params.chatId);
   }, [params.chatId]);
