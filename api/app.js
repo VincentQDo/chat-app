@@ -75,10 +75,20 @@ io.on('connection', (socket) => {
   socket.on('message', (data) => {
     console.log(data)
     // const message = `${socket.user.name}: ${data}`;
-    const message = data;
-    data.messageId = Math.random() * 500;
-    console.log(`<<< ${message}`);
-    io.emit('message', message);
+    const message =
+    {
+      messageId: 'test',   // Unique identifier for the message
+      chatId: 'test',      // Identifier for the chat session
+      userId: 'Test',      // Identifier for the user who sent the message
+      userName: 'Vince',    // Name of the user who sent the message
+      message: data,     // The content of the message
+      role: 'other', // Role of the user (e.g., 'self' if the message is from the current user, 'other' if from someone else)
+      timestamp: Date.now(),   // Unix timestamp of when the message was sent
+    }
+
+    socket.broadcast.emit('message', message);
+    message.role = 'self'
+    socket.emit('message', message);
   });
 
   socket.on('disconnect', () => {
