@@ -97,23 +97,7 @@ const msgHTML = (messageText) => `<p>${messageText}<p>`;
 wss.on("connection", (wsClient, req) => {
   wsClient.isAuthenticated = false;
   wsClient.on("message", (data) => {
-    if (!wsClient.isAuthenticated) {
-      const jsonData = JSON.parse(data.toString());
-      if (jsonData.userName === "Anna" || jsonData.userName === "Vince") {
-        wsClient.isAuthenticated = true;
-        wsClient.userName = jsonData.userName;
-        console.log(`User ${jsonData.userName} authenticated`)
-        return wsClient.send(200);
-      } else {
-        console.log(`User ${jsonData.userName} failed authentication`)
-        wsClient.send(401);
-        return wsClient.terminate();
-      }
-    }
-    const strData = wsClient.userName + ':' + data.toString();
-    console.log(`<<< ${strData}`);
-    console.log(`>>> ${msgHTML(strData)}`);
-    wss.broadcast(msgHTML(strData));
+    handleMessage(data, wsClient)
   });
 });
 
@@ -121,3 +105,23 @@ wss.on("connection", (wsClient, req) => {
 server.listen(8080, () => {
   console.log('Server is listening on port 8080');
 });
+
+function handleMessage(data, wsClient) {
+  if (!wsClient.isAuthenticated) {
+    const jsonData = JSON.parse(data.toString());
+    if (jsonData.userName === "Anna" || jsonData.userName === "Vince") {
+      wsClient.isAuthenticated = true;
+      wsClient.userName = jsonData.userName;
+      console.log(`User ${jsonData.userName} authenticated`)
+      return wsClient.send(200);
+    } else {
+      console.log(`User ${jsonData.userName} failed authentication`)
+      wsClient.send(401);
+      return wsClient.terminate();
+    }
+  }
+  const strData = wsClient.userName + ':' + data.toString();
+  console.log(`<<< ${strData}`);
+  console.log(`>>> ${msgHTML(strData)}`);
+  wss.broadcast(msgHTML(strData));
+} 
