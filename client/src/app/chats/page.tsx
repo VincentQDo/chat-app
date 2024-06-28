@@ -1,21 +1,15 @@
 import { ChatList } from "@/models/ChatList";
 import Link from "next/link";
 
-export default function Chats() {
-    const chatList: ChatList[] = [
-        {
-            sessionId: "1023lksjdflkj",
-            sessionName: "Chat wiht Bob",
-            personId: "bob1",
-            personName: "Bob",
-        },
-        {
-            sessionId: "alksjlkdjrlkj",
-            sessionName: "Chat wiht Alice",
-            personId: "Alice1",
-            personName: "Alice",
-        },
-    ];
+export default async function Chats() {
+    let chatList: ChatList[] = [];
+    try {
+        const userid = '01';
+        const res = await fetch(`http://localhost:8080/chatlist?userid=${userid}`);
+        chatList = await res.json();
+    } catch (error) {
+        console.error(error)
+    }
     // TODO should get data from some api call
     return (
         <div>

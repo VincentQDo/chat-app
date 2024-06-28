@@ -1,32 +1,34 @@
 "use client";
 
 import Message from "@/components/Message";
+import { ChatList } from "@/models/ChatList";
 import { ChatMsg } from "@/models/ChatMsg";
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 
 export default function Chat({ params }: { params: { chatId: string } }) {
-  const convoData: ChatMsg[] = [
-    {
-      userName: "Bob",
-      userId: "bob1",
-      message: "Hello there",
-      role: "other",
-      messageId: "slkjerlkj",
-    },
-    {
-      userName: "Vince",
-      userId: "vince1",
-      message: "Hello there back",
-      role: "self",
-      messageId: "1l3kjfi",
-    },
-  ];
 
-
-  const [messageList, setMessageList] = useState(convoData);
+  const [messageList, setMessageList] = useState([] as ChatMsg[]);
   const [userInput, setUserInput] = useState('');
   const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`http://localhost:8080/messagelist?chatid=${params.chatId}`);
+        if (!res.ok) {
+          throw new Error(`HTTP error ${res.status}: ${res.statusText}`)
+        }
+        const messageList = await res.json();
+        console.log(messageList);
+        setMessageList(messageList);
+      } catch (error) {
+        console.error('Error while getting messages', error);
+      }
+    }
+
+    fetchData();
+  }, [params.chatId]);
 
   useEffect(() => {
     socketRef.current = new WebSocket('ws://localhost:8080/chat');
@@ -66,6 +68,7 @@ export default function Chat({ params }: { params: { chatId: string } }) {
     setUserInput(e.target.value)
     console.log(userInput)
   }
+
   return (
     <div>
       <Link href="/chats">Back to convo List</Link>
