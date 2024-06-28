@@ -41,7 +41,7 @@ export default function ChatInterface({ initialData }: { initialData: ChatMsg[] 
             userName: 'Vince',
             messageId: 'fjlkwe'
         };
-        socketRef.current?.send(userInput);
+        socketRef.current?.send(JSON.stringify(newChatMsg));
         setMessageList([...messageList, newChatMsg]);
     };
 
