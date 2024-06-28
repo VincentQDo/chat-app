@@ -1,4 +1,72 @@
+import express from 'express';
+import http from 'http';
+import cors from 'cors';
 import WebSocket, { WebSocketServer } from "ws";
+
+// Create an Express application
+const app = express();
+app.use(cors());
+
+// Define a simple route for HTTP
+app.get('/', (req, res) => {
+  res.send('Hello, this is a WebSocket and HTTP server!');
+});
+
+// Define the /chatlist route
+app.get('/chatlist', (req, res) => {
+  const userId = req.query.userid;
+  if (!userId) {
+    console.log('Current userid is empty', userid);
+    return res.status(400).send('Missing userid query parameter');
+  }
+
+  // For demonstration, let's assume we have a function to fetch chat list based on userId
+  const chatList = [
+    {
+      sessionId: "1023lksjdflkj",
+      sessionName: "Chat wiht Bob",
+      personId: "bob1",
+      personName: "Bob",
+    },
+    {
+      sessionId: "alksjlkdjrlkj",
+      sessionName: "Chat wiht Alice",
+      personId: "Alice1",
+      personName: "Alice",
+    },
+  ];
+
+  console.log('result', chatList);
+  return res.json(chatList);
+});
+
+app.get('/messagelist', (req, res) => {
+  const chatid = req.query.chatid;
+  const convoData = [
+    {
+      userName: "Bob",
+      userId: "bob1",
+      message: "Hello there",
+      role: "other",
+      messageId: "slkjerlkj",
+    },
+    {
+      userName: "Vince",
+      userId: "vince1",
+      message: "Hello there back",
+      role: "self",
+      messageId: "1l3kjfi",
+    },
+  ];
+
+  console.log(chatid)
+  console.log(convoData)
+
+  return res.json(convoData);
+})
+
+// Create an HTTP server
+const server = http.createServer(app);
 
 class WebSocketServerExt extends WebSocketServer {
   /**
@@ -8,7 +76,6 @@ class WebSocketServerExt extends WebSocketServer {
    */
   constructor(options = undefined, callback = undefined) {
     super(options, callback);
-    console.log(`Websocket server listening on: `, options.port)
   }
   broadcast = (msg) => {
     this.clients.forEach((client) => {
@@ -20,7 +87,7 @@ class WebSocketServerExt extends WebSocketServer {
 }
 
 const wss = new WebSocketServerExt({
-  port: 8080,
+  server: server,
   clientTracking: true,
   path: "/chat",
 });
@@ -48,4 +115,9 @@ wss.on("connection", (wsClient, req) => {
     console.log(`>>> ${msgHTML(strData)}`);
     wss.broadcast(msgHTML(strData));
   });
+});
+
+// Start the HTTP server
+server.listen(8080, () => {
+  console.log('Server is listening on port 8080');
 });
