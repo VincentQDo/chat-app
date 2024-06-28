@@ -3,5 +3,5 @@ export interface ChatMsg {
   userId: string;
   message: string;
   role: "other" | "self";
-  messageId: string;
+  messageId: number;
 }

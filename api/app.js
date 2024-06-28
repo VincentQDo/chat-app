@@ -1,7 +1,7 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
-import WebSocket, { WebSocketServer } from "ws";
+import { Server } from 'socket.io';
 
 // Create an Express application
 const app = express();
@@ -48,14 +48,14 @@ app.get('/messagelist', (req, res) => {
       userId: "bob1",
       message: "Hello there",
       role: "other",
-      messageId: "slkjerlkj",
+      messageId: 0,
     },
     {
       userName: "Vince",
       userId: "vince1",
       message: "Hello there back",
       role: "self",
-      messageId: "1l3kjfi",
+      messageId: 1,
     },
   ];
 
@@ -67,37 +67,23 @@ app.get('/messagelist', (req, res) => {
 
 // Create an HTTP server
 const server = http.createServer(app);
+// Create a web socket server and add its own cors policy
+const io = new Server(server, { cors: { origin: '*' } });
+io.on('connection', (socket) => {
+  // console.log(`User ${socket.user.uid} connected`);
+  console.log('user connected', socket.sid)
+  socket.on('message', (data) => {
+    console.log(data)
+    // const message = `${socket.user.name}: ${data}`;
+    const message = data;
+    data.messageId = Math.random() * 500;
+    console.log(`<<< ${message}`);
+    io.emit('message', message);
+  });
 
-class WebSocketServerExt extends WebSocketServer {
-  /**
-   *
-   * @param {WebSocket.ServerOptions | undefined} options
-   * @param {(() => void) | undefined} callback
-   */
-  constructor(options = undefined, callback = undefined) {
-    super(options, callback);
-  }
-  broadcast = (msg) => {
-    this.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(msg);
-      }
-    });
-  };
-}
-
-const wss = new WebSocketServerExt({
-  server: server,
-  clientTracking: true,
-  path: "/chat",
-});
-
-const msgHTML = (messageText) => `<p>${messageText}<p>`;
-
-wss.on("connection", (wsClient, req) => {
-  wsClient.isAuthenticated = false;
-  wsClient.on("message", (data) => {
-    handleMessage(data, wsClient)
+  socket.on('disconnect', () => {
+    // console.log(`User ${socket.user.uid} disconnected`);
+    console.log('User disconnected');
   });
 });
 
@@ -105,23 +91,3 @@ wss.on("connection", (wsClient, req) => {
 server.listen(8080, () => {
   console.log('Server is listening on port 8080');
 });
-
-function handleMessage(data, wsClient) {
-  if (!wsClient.isAuthenticated) {
-    const jsonData = JSON.parse(data.toString());
-    if (jsonData.userName === "Anna" || jsonData.userName === "Vince") {
-      wsClient.isAuthenticated = true;
-      wsClient.userName = jsonData.userName;
-      console.log(`User ${jsonData.userName} authenticated`)
-      return wsClient.send(200);
-    } else {
-      console.log(`User ${jsonData.userName} failed authentication`)
-      wsClient.send(401);
-      return wsClient.terminate();
-    }
-  }
-  const strData = wsClient.userName + ':' + data.toString();
-  console.log(`<<< ${strData}`);
-  console.log(`>>> ${msgHTML(strData)}`);
-  wss.broadcast(msgHTML(strData));
-} 

@@ -4,33 +4,31 @@ import Message from "@/components/Message";
 import { ChatMsg } from "@/models/ChatMsg";
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { Socket, io } from 'socket.io-client';
 
-export default function ChatInterface({ initialData }: { initialData: ChatMsg[] }) {
+export default function ChatInterface({ initialData, chatId }: { initialData: ChatMsg[], chatId: string }) {
 
     const [messageList, setMessageList] = useState(initialData);
     const [userInput, setUserInput] = useState('');
-    const socketRef = useRef<WebSocket | null>(null);
+    const socketRef = useRef<Socket | null>(null);
 
     useEffect(() => {
-        socketRef.current = new WebSocket('ws://localhost:8080/chat');
+        socketRef.current = io('http://localhost:8080');
 
-        socketRef.current.onopen = () => {
-            console.log('Socket connection opened');
-        }
-
-        socketRef.current.onmessage = (event: MessageEvent<{ message: string }>) => {
-            const newMessage = event.data;
-            console.log(newMessage);
-        }
-
-        socketRef.current.onclose = () => {
-            console.log('websocket connectio nclosed')
-        }
+        socketRef.current.on('connect', () => {
+            console.log('Connected!!')
+            socketRef.current!.on('message', (data) => {
+                console.log(data);
+                setMessageList((currentMsgList) => [...currentMsgList, data])
+            })
+        })
 
         return () => {
-            socketRef.current?.close();
+            // clean up socket code here
+            // disconnect socket
+            socketRef.current?.disconnect();
         }
-    }, []);
+    }, [chatId]);
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -39,10 +37,9 @@ export default function ChatInterface({ initialData }: { initialData: ChatMsg[] 
             userId: 'vince1',
             role: 'self',
             userName: 'Vince',
-            messageId: 'fjlkwe'
+            messageId: 0
         };
-        socketRef.current?.send(JSON.stringify(newChatMsg));
-        setMessageList([...messageList, newChatMsg]);
+        socketRef.current?.emit('message', newChatMsg);
     };
 
     const onChangeHandler = (e: ChangeEvent<HTMLInputElement>) => {

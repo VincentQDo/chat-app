@@ -9,12 +9,12 @@ export default async function Chat({ params }: { params: { chatId: string } }) {
     }
     const messageList: ChatMsg[] = await res.json();
     return (
-      <ChatInterface initialData={messageList}></ChatInterface>
+      <ChatInterface initialData={messageList} chatId={params.chatId}></ChatInterface>
     )
   } catch (error) {
     console.error('Error while getting messages', error);
     return (
-      <ChatInterface initialData={[]}></ChatInterface>
+      <ChatInterface initialData={[]} chatId={params.chatId}></ChatInterface>
     )
   }
 }
