@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import { Server } from 'socket.io';
+import admin from './firebaseAdmin.js';
 
 // Create an Express application
 const app = express();
@@ -69,6 +70,20 @@ app.get('/messagelist', (req, res) => {
 const server = http.createServer(app);
 // Create a web socket server and add its own cors policy
 const io = new Server(server, { cors: { origin: '*' } });
+
+// Middleware to verify Firebase ID token
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth.token;
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    socket.user = decodedToken;
+    next();
+  } catch (err) {
+    console.log('Authentication error', err);
+    next(new Error('Authentication error'));
+  }
+});
+
 io.on('connection', (socket) => {
   // console.log(`User ${socket.user.uid} connected`);
   console.log('user connected', socket.sid)
