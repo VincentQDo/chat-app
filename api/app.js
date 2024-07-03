@@ -7,6 +7,26 @@ import admin from './firebaseAdmin.js';
 // Create an Express application
 const app = express();
 app.use(cors());
+// Middleware to verify Firebase ID token
+async function verifyToken(req, res, next) {
+  const token = req.headers.authorization?.split('Bearer ')[1];
+
+  if (!token) {
+    return res.status(403).send('Unauthorized');
+  }
+
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    next();
+  } catch (err) {
+    console.log('Authentication error', err, token);
+    return res.status(403).send('Unauthorized');
+  }
+}
+
+// Apply the verifyToken middleware globally
+app.use(verifyToken);
 
 // Define a simple route for HTTP
 app.get('/', (req, res) => {
