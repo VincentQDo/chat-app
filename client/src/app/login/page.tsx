@@ -6,6 +6,7 @@ export default function Login() {
         const [email, password] = [formData.get('email')?.toString(), formData.get('password')?.toString()];
         if (email && password) {
             const user = await authenticate(email, password);
+            console.log(user);
         }
     }
 
