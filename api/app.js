@@ -9,10 +9,11 @@ const app = express();
 app.use(cors());
 // Middleware to verify Firebase ID token
 async function verifyToken(req, res, next) {
+  const unauthResponse = { code: 403, msg: 'Unauthorize' };
   const token = req.headers.authorization?.split('Bearer ')[1];
 
   if (!token) {
-    return res.status(403).send('Unauthorized');
+    return res.status(403).send(unauthResponse);
   }
 
   try {
@@ -21,7 +22,7 @@ async function verifyToken(req, res, next) {
     next();
   } catch (err) {
     console.log('Authentication error', err, token);
-    return res.status(403).send('Unauthorized');
+    return res.status(403).send(unauthResponse);
   }
 }
 
@@ -36,9 +37,10 @@ app.get('/', (req, res) => {
 // Define the /chatlist route
 app.get('/chatlist', (req, res) => {
   const userId = req.query.userid;
+  const badRequest = { code: 400, msg: 'Missing userid field' };
   if (!userId) {
-    console.log('Current userid is empty', userid);
-    return res.status(400).send('Missing userid query parameter');
+    console.log('Current userid is empty', userId);
+    return res.status(400).send(badRequest);
   }
 
   // For demonstration, let's assume we have a function to fetch chat list based on userId
