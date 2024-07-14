@@ -1,36 +1,47 @@
 'use client';
 import { ChatList } from "@/models/ChatList";
+import fetchData from "@/services/fetchData";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default async function Chats() {
-    let chatList: ChatList[] = [];
-    let isUnauthorized: boolean = false;
-    try {
-        const userid = '01';
-        const res = await fetch(`http://localhost:8080/chatlist?userid=${userid}`, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json',
+export default function Chats() {
+    let [chatList, setChatList] = useState([] as ChatList[]);
+    let [isUnauthorized, setIsUnauthorized] = useState(false);
+    const router = useRouter();
+    useEffect(() => {
+        const initData = async () => {
+            try {
+                const userid = '01';
+                const fetchCall = fetchData(`/chatlist?userid=${userid}`, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const res = await fetchCall;
+                const jsonRes = await res.json();
+                console.log(jsonRes);
+                if (Array.isArray(jsonRes)) {
+                    setChatList(jsonRes);
+                } else {
+                    setIsUnauthorized(true);
+                }
+            } catch (error) {
+                console.error(error);
+                setIsUnauthorized(true);
             }
-        });
-        res.bodyUsed
-        const jsonRes = await res.json();
-        console.log(jsonRes);
-        if (Array.isArray(jsonRes)) {
-            chatList = jsonRes;
-        } else {
-            isUnauthorized = true;
         }
-    } catch (error) {
-        console.error(error);
-        isUnauthorized = true;
-    }
-    if (isUnauthorized) {
-        redirect('/login');
-    }
-    // TODO should get data from some api call
+        initData();
+    }, []);
+
+    useEffect(() => {
+        if (isUnauthorized) {
+            router.push('/login');
+        }
+    }, [isUnauthorized, router]);
+
     return (
         <div>
             <ul>
