@@ -37,8 +37,8 @@ app.get('/', (req, res) => {
 // Define the /chatlist route
 app.get('/chatlist', (req, res) => {
   const userId = req.query.userid;
-  const badRequest = { code: 400, msg: 'Missing userid field' };
   if (!userId) {
+    const badRequest = { code: 400, msg: 'Missing userid field' };
     console.log('Current userid is empty', userId);
     return res.status(400).send(badRequest);
   }
