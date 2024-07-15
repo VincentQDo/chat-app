@@ -9,10 +9,10 @@ const app = express();
 app.use(cors());
 // Middleware to verify Firebase ID token
 async function verifyToken(req, res, next) {
-  const unauthResponse = { code: 403, msg: 'Unauthorize' };
+  const unauthResponse = { code: '403', msg: 'Token not found' };
   const token = req.headers.authorization?.split('Bearer ')[1];
 
-  if (!token) {
+  if (!token || token === 'null') {
     return res.status(403).send(unauthResponse);
   }
 
@@ -22,6 +22,10 @@ async function verifyToken(req, res, next) {
     next();
   } catch (err) {
     console.log('Authentication error', err, token);
+    /** @type FirebaseAuthError */
+    const firebaseAuthErr = err;
+    unauthResponse.code = firebaseAuthErr.code;
+    unauthResponse.msg = firebaseAuthErr.message;
     return res.status(403).send(unauthResponse);
   }
 }
