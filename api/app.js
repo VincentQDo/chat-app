@@ -41,14 +41,14 @@ app.get('/', (req, res) => {
 
 // Define the /chatlist route
 app.get('/chatlist', (req, res) => {
-  const userId = req.query.userid;
+  const userId = req.user.uid;
   if (!userId) {
     const badRequest = { code: 400, msg: 'Missing userid field' };
     console.log('Current userid is empty', userId);
     return res.status(400).send(badRequest);
   }
 
-  db.all('SELECT * FROM chats', [], (err, rows) => {
+  db.all('SELECT * FROM chats where personId = ?', [userId], (err, rows) => {
     if (err) {
       console.error('Error while fetching data', err);
       return;
@@ -60,8 +60,8 @@ app.get('/chatlist', (req, res) => {
 
 app.get('/messagelist', (req, res) => {
   const chatid = req.query.chatid;
-
-  db.all('SELECT * FROM messages', [], (err, rows) => {
+  const userid = req.user.uid;
+  db.all('SELECT * FROM messages WHERE chatId = ? AND userId = ?', [chatid, userid], (err, rows) => {
     if (err) {
       console.error('Error while getting messages', err);
       return;
@@ -69,6 +69,27 @@ app.get('/messagelist', (req, res) => {
     console.log('Messages: ', rows);
 
     return res.json(rows);
+  })
+});
+
+app.delete('/chats', (req, res) => {
+  db.serialize(() => {
+
+    db.run('DELETE FROM chats', (err) => {
+      if (err) {
+        console.error('An error occured while deleting chats.', err)
+      } else {
+        console.log('chats deleted')
+      }
+    });
+
+    db.run('VACUUM', (err) => {
+      if (err) {
+        console.error('Error occured while vaccuming.', err)
+      } else {
+        console.log('Vacuum done!')
+      }
+    })
   })
 })
 
