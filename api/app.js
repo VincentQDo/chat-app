@@ -60,27 +60,16 @@ app.get('/chatlist', (req, res) => {
 
 app.get('/messagelist', (req, res) => {
   const chatid = req.query.chatid;
-  const convoData = [
-    {
-      userName: "Bob",
-      userId: "bob1",
-      message: "Hello there",
-      role: "other",
-      messageId: 0,
-    },
-    {
-      userName: "Vince",
-      userId: "vince1",
-      message: "Hello there back",
-      role: "self",
-      messageId: 1,
-    },
-  ];
 
-  console.log(chatid)
-  console.log(convoData)
+  db.all('SELECT * FROM messages', [], (err, rows) => {
+    if (err) {
+      console.error('Error while getting messages', err);
+      return;
+    }
+    console.log('Messages: ', rows);
 
-  return res.json(convoData);
+    return res.json(rows);
+  })
 })
 
 // Create an HTTP server

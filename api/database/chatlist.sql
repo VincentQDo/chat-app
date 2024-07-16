@@ -4,8 +4,3 @@ CREATE TABLE IF NOT EXISTS chats (
 	personId TEXT,
 	personName TEXT
 );
-
-INSERT INTO chats (sessionName, personId, personName)
-VALUES ('Chat with Bob', 'bob1', 'Bob'),
-('Chat with Alice', 'alice1', 'Alice');
-
