@@ -3,6 +3,7 @@ import http from 'http';
 import cors from 'cors';
 import { Server } from 'socket.io';
 import admin from './firebaseAdmin.js';
+import db from './database/database.js';
 
 // Create an Express application
 const app = express();
@@ -47,24 +48,14 @@ app.get('/chatlist', (req, res) => {
     return res.status(400).send(badRequest);
   }
 
-  // For demonstration, let's assume we have a function to fetch chat list based on userId
-  const chatList = [
-    {
-      sessionId: "1023lksjdflkj",
-      sessionName: "Chat wiht Bob",
-      personId: "bob1",
-      personName: "Bob",
-    },
-    {
-      sessionId: "alksjlkdjrlkj",
-      sessionName: "Chat wiht Alice",
-      personId: "Alice1",
-      personName: "Alice",
-    },
-  ];
-
-  console.log('result', chatList);
-  return res.json(chatList);
+  db.all('SELECT * FROM chats', [], (err, rows) => {
+    if (err) {
+      console.error('Error while fetching data', err);
+      return;
+    }
+    console.log(rows);
+    return res.json(rows);
+  })
 });
 
 app.get('/messagelist', (req, res) => {
