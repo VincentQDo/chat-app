@@ -3,11 +3,14 @@ import http from 'http';
 import cors from 'cors';
 import { Server } from 'socket.io';
 import admin from './firebaseAdmin.js';
+import bodyParser from 'body-parser';
 import db from './database/database.js';
 
 // Create an Express application
 const app = express();
 app.use(cors());
+app.use(bodyParser.json());
+
 // Middleware to verify Firebase ID token
 async function verifyToken(req, res, next) {
   const unauthResponse = { code: '403', msg: 'Token not found' };
@@ -72,6 +75,34 @@ app.get('/messagelist', (req, res) => {
   })
 });
 
+app.post('/createchat', (req, res) => {
+  /** 
+   * @typedef chatReqBody
+   * @prop {string[]} personIds
+   * @prop {boolean} isGroupChat
+   * */
+
+  /** @type chatReqBody */
+  const { personIds, isGroupChat } = req.body;
+
+  const chatParams = {
+    $createdAt: Date.now(),
+    $updatedAt: Date.now(),
+    $isGroupChat: isGroupChat
+  }
+
+  const chatQuery = `INSERT INTO chats (createdAt, updatedAt, isGroupChat) VALUES ($createdAt, $updatedAt, $isGroupChat)`;
+
+  db.run(chatQuery, chatParams, function(err) {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log(this.lastID);
+      return this.lastID;
+    }
+  });
+})
+
 app.delete('/chats', (req, res) => {
   db.serialize(() => {
 
@@ -115,7 +146,7 @@ io.on('connection', (socket) => {
   // console.log(`User ${socket.user.uid} connected`);
   console.log('user connected', socket.sid)
   socket.on('message', (data) => {
-    console.log(data)
+    console.log('message data:', data)
     // const message = `${socket.user.name}: ${data}`;
     const message =
     {
@@ -128,9 +159,21 @@ io.on('connection', (socket) => {
       timestamp: Date.now(),   // Unix timestamp of when the message was sent
     }
 
-    socket.broadcast.emit('message', message);
-    message.role = 'self'
-    socket.emit('message', message);
+    const query = `INSERT INTO messages (messageid, chatId, userId, userName, message, role, timestamp)
+                    VALUES ($messageid, $chatId, $userId, $userName, $message, $role, $timestamp)`
+    const params = {
+      $messageid: data
+    }
+    return;
+    db.run(query, params, function(err) {
+      if (err) {
+        console.error('Error while inserting message', err);
+      } else {
+        socket.broadcast.emit('message', message);
+        message.role = 'self'
+        socket.emit('message', message);
+      }
+    })
   });
 
   socket.on('disconnect', () => {
