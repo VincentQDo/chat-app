@@ -85,22 +85,56 @@ app.post('/createchat', (req, res) => {
   /** @type chatReqBody */
   const { personIds, isGroupChat } = req.body;
 
-  const chatParams = {
-    $createdAt: Date.now(),
-    $updatedAt: Date.now(),
-    $isGroupChat: isGroupChat
-  }
-
-  const chatQuery = `INSERT INTO chats (createdAt, updatedAt, isGroupChat) VALUES ($createdAt, $updatedAt, $isGroupChat)`;
-
-  db.run(chatQuery, chatParams, function(err) {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log(this.lastID);
-      return this.lastID;
+  db.serialize(() => {
+    console.log('Beginning transaction to create chat session.');
+    db.run('BEGIN TRANSACTION');
+    // Create a chat session id
+    const chatQuery = `INSERT INTO chats (createdAt, updatedAt, isGroupChat) VALUES ($createdAt, $updatedAt, $isGroupChat)`;
+    const chatSessionId = '';
+    const chatParams = {
+      $createdAt: Date.now(),
+      $updatedAt: Date.now(),
+      $isGroupChat: isGroupChat
     }
-  });
+    db.run(chatQuery, chatParams, function(err) {
+      if (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Error creating chat.' })
+      } else {
+        console.log('Successfully created chat session: ', this.lastID);
+        chatSessionId = this.lastID;
+      }
+    });
+
+    const userQueryValues = personIds.map(_ => '(?, ?)').join(', ');
+    const linkUserToChatQuery = `INSERT INTO user_chats (sessionId, userId) VALUES ${userQueryValues}`;
+    const userToChatParams = personIds.map(id => {
+      return (chatSessionId, id);
+    })
+
+    db.run(linkUserToChatQuery, userToChatParams, function(err) {
+      if (err) {
+        console.error(err);
+        db.run('ROLLBACK', (rollbackErr) => {
+          if (rollbackErr) {
+            console.error('Error rolling back transaction.', rollbackErr);
+          } else {
+            console.log('Scuccessfully rolled back transaction.');
+          }
+        });
+      } else {
+        console.log('Linking user to chat successful: ', this.lastID);
+        db.run('COMMIT', (commitErr) => {
+          if (commitErr) {
+            console.error('Error committing transaction.', commitErr)
+          } else {
+            console.log('Successfully committed transaction.');
+            res.status(201).json({ chatSessionId })
+          }
+        })
+      }
+    });
+  })
 })
 
 app.delete('/chats', (req, res) => {

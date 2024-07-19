@@ -13,6 +13,9 @@ export default function Home() {
         <li>
           <Link href="/settings">Go to Settings</Link>
         </li>
+        <li>
+          <Link href="/createchat">New Chat</Link>
+        </li>
       </ul>
     </main>
   );

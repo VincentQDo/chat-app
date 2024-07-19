@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS chats (
 CREATE TABLE IF NOT EXISTS users (
 
 	userId TEXT PRIMARY KEY,
-	userName TEXT,
+	userName TEXT
 );
 
 CREATE TABLE IF NOT EXISTS user_chats (
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS user_chats (
 	sessionId INTEGER,
 	userId TEXT,
 	FOREIGN KEY (sessionId) REFERENCES chats(sessionId) ON DELETE CASCADE,
-	FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE,
+	FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS messages (
