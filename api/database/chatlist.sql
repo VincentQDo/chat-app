@@ -32,6 +32,15 @@ CREATE TABLE IF NOT EXISTS messages (
 	FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS friends (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	userId TEXT,
+	friendId TEXT,
+	status TEXT,
+	createdAt INTEGER,
+	updatedAt INTEGER,
+	FOREIGN KEY (chatId) REFERENCES chats(sessionId) ON DELETE CASCADE,
+	)
 CREATE INDEX IF NOT EXISTS idx_chatId ON messages(chatId);
 CREATE INDEX IF NOT EXISTS idx_userId ON messages(userId);
 CREATE INDEX IF NOT EXISTS idx_timestamp ON messages(timestamp);

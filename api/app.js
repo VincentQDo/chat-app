@@ -75,6 +75,10 @@ app.get('/messagelist', (req, res) => {
   })
 });
 
+app.get('/friend-list', (req, res) => {
+
+})
+
 app.post('/createchat', (req, res) => {
   /** 
    * @typedef chatReqBody
