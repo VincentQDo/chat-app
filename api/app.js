@@ -76,7 +76,15 @@ app.get('/messagelist', (req, res) => {
 });
 
 app.get('/friend-list', (req, res) => {
-
+  const userId = req.query.userid;
+  db.all('SELECT * FROM users WHERE userId = ?', userId, (err, rows) => {
+    if (err) {
+      console.error('Something went wrong while getting friendlist', err);
+    } else {
+      console.log('Fetched data.', rows);
+      return res.json(rows);
+    }
+  })
 })
 
 app.post('/createchat', (req, res) => {

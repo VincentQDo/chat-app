@@ -1,22 +1,20 @@
 'use client';
+import { useAuth } from "@/hooks/useAuth";
 import { ChatList } from "@/models/ChatList";
 import fetchData from "@/services/fetchData";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Chats() {
     let [chatList, setChatList] = useState([] as ChatList[]);
-    let [isUnauthorized, setIsUnauthorized] = useState(false);
-    const router = useRouter();
+    const userToken = useAuth();
     useEffect(() => {
         const initData = async () => {
             try {
-                const userid = '01';
-                const fetchCall = fetchData(`/chatlist?userid=${userid}`, {
+                const fetchCall = fetchData(`/chatlist`, {
                     method: 'GET',
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                        Authorization: `Bearer ${userToken}`,
                         'Content-Type': 'application/json',
                     }
                 });
@@ -25,22 +23,13 @@ export default function Chats() {
                 console.log(jsonRes);
                 if (Array.isArray(jsonRes)) {
                     setChatList(jsonRes);
-                } else {
-                    setIsUnauthorized(true);
                 }
             } catch (error) {
                 console.error(error);
-                setIsUnauthorized(true);
             }
         }
         initData();
     }, []);
-
-    useEffect(() => {
-        if (isUnauthorized) {
-            router.push('/login');
-        }
-    }, [isUnauthorized, router]);
 
     return (
         <div>
