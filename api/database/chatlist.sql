@@ -3,30 +3,23 @@ CREATE TABLE IF NOT EXISTS users (
 	userName TEXT
 );
 
-CREATE TABLE IF NOT EXISTS user_chats (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	sessionId INTEGER,
-	userId TEXT,
-	FOREIGN KEY (sessionId) REFERENCES chats(sessionId) ON DELETE CASCADE,
-	FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS messages (
 	messageid INTEGER PRIMARY KEY AUTOINCREMENT,
 	userId TEXT,
 	message TEXT,
-	timestamp INTEGER,
-	status TEXT DEFAULT 'sent',
+	createdAt INTEGER,
+	updatedAt INTEGER,
+	status TEXT DEFAULT 'pending',
 	FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS friends (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	userId TEXT,
-	friendId TEXT,
+CREATE TABLE IF NOT EXISTS relationships (
+	userid1 TEXT,
+	userid2 TEXT,
 	status TEXT DEFAULT 'pending',
 	createdAt INTEGER,
 	updatedAt INTEGER,
+	PRIMARY KEY (userid1, userid2),
 	FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE,
 	FOREIGN KEY (friendId) REFERENCES users(userId) ON DELETE CASCADE
 );
