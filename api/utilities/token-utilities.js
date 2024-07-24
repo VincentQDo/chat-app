@@ -1,4 +1,6 @@
 import { FirebaseAuthError } from "firebase-admin/lib/utils/error";
+import { Socket } from 'socket.io';
+import { ExtendedError } from 'socket.io/dist/namespace.js';
 
 // Middleware to verify Firebase ID token
 export async function verifyToken(req, res, next) {
@@ -23,3 +25,18 @@ export async function verifyToken(req, res, next) {
     }
 }
 
+/**
+ * @param {Socket} socket 
+ * @param {(err?: ExtendedError) => void} next 
+ * */
+export async function websocketVerifyToken(socket, next) {
+    const token = socket.handshake.auth.token;
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        socket.user = decodedToken;
+        next();
+    } catch (err) {
+        console.log('Authentication error', err);
+        next(new Error('Authentication error'));
+    }
+}
