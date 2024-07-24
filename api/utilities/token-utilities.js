@@ -1,6 +1,7 @@
 import { FirebaseAuthError } from "firebase-admin/lib/utils/error";
 import { Socket } from 'socket.io';
 import { ExtendedError } from 'socket.io/dist/namespace.js';
+import admin from './firebaseAdmin.js'
 
 // Middleware to verify Firebase ID token
 export async function verifyToken(req, res, next) {
