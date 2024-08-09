@@ -28,18 +28,6 @@ app.get('/friendlist', (req, res) => {
   res.send([{ msg: 'Test', userId: 'userId' }])
 })
 
-app.get('/chats', (req, res) => {
-  res.send([{ msg: 'Test', userId: 'userId' }])
-})
-
-app.get('/chats', (req, res) => {
-  res.send([{ msg: 'Test', userId: 'userId' }])
-})
-
-app.get('/chats', (req, res) => {
-  res.send([{ msg: 'Test', userId: 'userId' }])
-})
-
 app.put('/chats', (req, res) => {
   // if userid === globalchat
   // then it is not a private chat
@@ -69,7 +57,7 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 // Middleware to verify Firebase ID token
-io.use(websocketVerifyToken);
+// io.use(websocketVerifyToken);
 
 io.on('connection', (socket) => {
   // console.log(`User ${socket.user.uid} connected`);
