@@ -73,9 +73,21 @@ io.use(websocketVerifyToken);
 
 io.on('connection', (socket) => {
   // console.log(`User ${socket.user.uid} connected`);
-  console.log('user connected', socket.sid)
+  console.info('[INFO] user connected', socket.sid)
   socket.on('message', (data) => {
-    console.log('message data:', data)
+    console.info('[INFO] message data:', data)
+    const currTime = Date.now();
+    const insertQuery = `INSERT INTO messages (userId, message, createdAt, updatedAt, chatId) VALUES (?, ?, ?, ?, ?)`
+    db.run(insertQuery, [userid, message, currTime, currTime, chatid || 'global'], (err) => {
+      if (err) {
+        console.error(err)
+        socket.send({ error: 'Something went wrong while sending message' })
+      } else {
+        console.log('[INFO] Inserted data into table');
+        socket.broadcast({ error: null, message: { message, currTime, userid } })
+      }
+    })
+
   });
 
   socket.on('disconnect', () => {
