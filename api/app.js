@@ -65,6 +65,7 @@ io.on('connection', (socket) => {
   socket.on('message', (data) => {
     console.info('[INFO] message data:', data)
     const currTime = Date.now();
+    const { userid, message, chatid } = data;
     const insertQuery = `INSERT INTO messages (userId, message, createdAt, updatedAt, chatId) VALUES (?, ?, ?, ?, ?)`
     db.run(insertQuery, [userid, message, currTime, currTime, chatid || 'global'], (err) => {
       if (err) {
