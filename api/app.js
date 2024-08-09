@@ -80,7 +80,7 @@ io.on('connection', (socket) => {
         socket.send({ error: 'Something went wrong while sending message' })
       } else {
         console.log('[INFO] Inserted data into table');
-        socket.broadcast({ error: null, message: { message, currTime, userid } })
+        socket.broadcast.emit({ error: null, message: { message, currTime, userid } })
       }
     })
 
