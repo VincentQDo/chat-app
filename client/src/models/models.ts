@@ -4,6 +4,7 @@ export interface Message {
   createdAt?: number;   // timestamps are made on serverr
   updatedAt?: number;
   status?: 'pending' | 'sent' | 'read' | null;
+  chatId?: string;
 }
 
 export interface User {
@@ -14,7 +15,7 @@ export interface User {
 export interface Relationship {
   userId1: string;
   userId2: string;
-  status: 'pending' | 'friend' | 'blocked';
+  status?: 'pending' | 'friend' | 'blocked';
   createdAt?: number;
   updatedAt?: number;
 }
