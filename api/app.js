@@ -54,7 +54,14 @@ app.post('/message', (req, res) => {
 // Create an HTTP server
 const server = http.createServer(app);
 // Create a web socket server and add its own cors policy
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
+    credentials: true,
+  }
+});
 
 // Middleware to verify Firebase ID token
 // io.use(websocketVerifyToken);
