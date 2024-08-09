@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS messages (
 	createdAt INTEGER,
 	updatedAt INTEGER,
 	status TEXT DEFAULT 'pending',
+	chatId TEXT DEFAULT 'global',
 	FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
 );
 
@@ -20,9 +21,8 @@ CREATE TABLE IF NOT EXISTS relationships (
 	createdAt INTEGER,
 	updatedAt INTEGER,
 	PRIMARY KEY (userid1, userid2),
-	FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE,
-	FOREIGN KEY (friendId) REFERENCES users(userId) ON DELETE CASCADE
+	FOREIGN KEY (userid1) REFERENCES users(userId) ON DELETE CASCADE,
+	FOREIGN KEY (userid2) REFERENCES users(userId) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_userId ON messages(userId);
-CREATE INDEX IF NOT EXISTS idx_timestamp ON messages(timestamp);

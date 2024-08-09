@@ -1,6 +1,4 @@
-import { FirebaseAuthError } from "firebase-admin/lib/utils/error";
 import { Socket } from 'socket.io';
-import { ExtendedError } from 'socket.io/dist/namespace.js';
 import admin from './firebaseAdmin.js'
 
 // Middleware to verify Firebase ID token
@@ -18,7 +16,6 @@ export async function verifyToken(req, res, next) {
         next();
     } catch (err) {
         console.log('Authentication error', err, token);
-        /** @type FirebaseAuthError */
         const firebaseAuthErr = err;
         unauthResponse.code = firebaseAuthErr.code;
         unauthResponse.msg = firebaseAuthErr.message;
@@ -28,7 +25,7 @@ export async function verifyToken(req, res, next) {
 
 /**
  * @param {Socket} socket 
- * @param {(err?: ExtendedError) => void} next 
+ * @param {(err?: Error) => void} next 
  * */
 export async function websocketVerifyToken(socket, next) {
     const token = socket.handshake.auth.token;
