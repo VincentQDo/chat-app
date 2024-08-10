@@ -68,9 +68,12 @@ const io = new Server(server, {
 
 io.on('connection', (socket) => {
   // console.log(`User ${socket.user.uid} connected`);
-  console.info('[INFO] user connected', socket.sid)
+  console.info(`[INFO] User connected: ${socket.id}`)
+  const connectedSockets = io.sockets.sockets;
+  console.info(`[INFO] Number of connected users: `, connectedSockets.size);
   socket.on('message', (data) => {
-    console.info('[INFO] message data:', data)
+    console.info('-------------------------------')
+    console.info(`[INFO] Socket ${socket.id} sent: `, data)
     const currTime = Date.now();
     const { userid, message, chatid } = data;
     const insertQuery = `INSERT INTO messages (userId, message, createdAt, updatedAt, chatId) VALUES (?, ?, ?, ?, ?)`
@@ -79,7 +82,7 @@ io.on('connection', (socket) => {
         console.error(err)
         socket.send({ error: 'Something went wrong while sending message' })
       } else {
-        console.log('[INFO] Inserted data into table');
+        console.info('[INFO] Inserted data into table');
         socket.broadcast.emit({ error: null, message: { message, currTime, userid } })
       }
     })
@@ -87,8 +90,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    // console.log(`User ${socket.user.uid} disconnected`);
-    console.log('User disconnected');
+    console.info('[INFO] User disconnected: ', socket.id);
   });
 });
 
