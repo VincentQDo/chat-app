@@ -7,7 +7,7 @@ import { io, Socket } from 'socket.io-client';
 export default function GlobalChat() {
   const [userInput, setUserInput] = useState('');
   const [userNameInput, setUserNameInput] = useState('');
-  const [userName, setUserName] = useState('Anon');
+  const [userName, setUserName] = useState(localStorage.getItem('userName') ?? '');
   const [messages, setMessages] = useState<Message[]>([]);
 
   const socket = useRef<Socket | null>(null);
@@ -20,7 +20,7 @@ export default function GlobalChat() {
 
     socket.current.on('message', (data: WebsocketServerResponse) => {
       if (data.message) {
-        setMessages([...messages, { ...data.message }])
+        setMessages((prevMessages) => [...prevMessages, { ...data.message! }])
       }
     })
 
@@ -44,6 +44,7 @@ export default function GlobalChat() {
 
   const handleSetUserNameClick = () => {
     setUserName(userNameInput);
+    localStorage.setItem('userName', userNameInput);
   }
 
   return (
@@ -56,30 +57,31 @@ export default function GlobalChat() {
             <span> {message.message}</span>
           </li>)}
       </ul>
-      <div className='flex flex-col'>
-        <input
-          type='text'
-          className='bg-slate-700 mb-2'
-          placeholder='Message'
-          value={userInput}
-          onChange={(event) => setUserInput(event.target.value)}
-        ></input>
+      <div className='flex flex-row'>
         {userName === 'Anon' ?
-          <input
-            type='text'
-            className='bg-slate-700'
-            placeholder='User Name'
-            value={userNameInput}
-            onChange={(event) => setUserNameInput(event.target.value)}
-          ></input> :
-          null
+          <>
+            <input
+              type='text'
+              className='bg-slate-700'
+              placeholder='User Name'
+              value={userNameInput}
+              onChange={(event) => setUserNameInput(event.target.value)}
+            ></input>
+            <button onClick={() => handleSetUserNameClick()}>Set Username</button>
+          </> :
+          <>
+            <input
+              type='text'
+              className='bg-slate-700 mb-2'
+              placeholder='Message'
+              value={userInput}
+              onChange={(event) => setUserInput(event.target.value)}
+            ></input>
+
+            <button onClick={() => handleSendMessage()}>Send</button>
+          </>
         }
       </div>
-      {userName === 'Anon' ?
-        <button onClick={() => handleSetUserNameClick()}>Set Username</button> :
-        null
-      }
-      <button onClick={() => handleSendMessage()}>Send</button>
     </div>
   )
 }
