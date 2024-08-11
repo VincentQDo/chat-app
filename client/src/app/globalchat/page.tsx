@@ -16,6 +16,14 @@ export default function GlobalChat() {
       console.log('Connected to Socket.IO server');
     })
 
+    socket.current.on('message', (data) => {
+      console.log('Message from server: ', data)
+    })
+
+    socket.current.on('error', (err) => {
+      console.error('Error from server: ', err)
+    })
+
     return () => {
       socket.current?.disconnect()
     }
