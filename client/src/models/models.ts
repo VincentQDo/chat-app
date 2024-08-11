@@ -19,3 +19,8 @@ export interface Relationship {
   createdAt?: number;
   updatedAt?: number;
 }
+
+export interface WebsocketServerResponse {
+  error: string;
+  message: Message;
+}

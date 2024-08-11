@@ -72,18 +72,29 @@ io.on('connection', (socket) => {
   const connectedSockets = io.sockets.sockets;
   console.info(`[INFO] Number of connected users: `, connectedSockets.size);
   socket.on('message', (data) => {
-    console.info('-------------------------------')
     console.info(`[INFO] Socket ${socket.id} sent: `, data)
     const currTime = Date.now();
-    const { userid, message, chatid } = data;
-    const insertQuery = `INSERT INTO messages (userId, message, createdAt, updatedAt, chatId) VALUES (?, ?, ?, ?, ?)`
-    db.run(insertQuery, [userid, message, currTime, currTime, chatid || 'global'], (err) => {
+    const { userId, message, chatId } = data;
+    const insertQuery = `INSERT INTO messages (userId, message, createdAt, updatedAt, chatId, status) VALUES (?, ?, ?, ?, ?, ?)`
+    db.run(insertQuery, [userId, message, currTime, currTime, chatId || 'global', 'sent'], (err) => {
       if (err) {
         console.error(err)
         socket.emit('error', { error: 'Something went wrong while sending message' })
       } else {
         console.info('[INFO] Inserted data into table');
-        socket.broadcast.emit('message', { error: null, message: { message, currTime, userid } })
+        socket.broadcast.emit('message',
+          {
+            error: null,
+            message: {
+              message,
+              createdAt: currTime,
+              updatedAt: currTime,
+              userId,
+              status: 'sent',
+              chatId
+            }
+          }
+        )
       }
     })
 

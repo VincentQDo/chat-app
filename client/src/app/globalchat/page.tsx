@@ -1,11 +1,12 @@
 "use client";
 
+import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 export default function GlobalChat() {
   const [userInput, setUserInput] = useState('');
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const socket = useRef<Socket | null>(null);
 
@@ -16,8 +17,9 @@ export default function GlobalChat() {
       console.log('Connected to Socket.IO server');
     })
 
-    socket.current.on('message', (data) => {
-      console.log('Message from server: ', data)
+    socket.current.on('message', (data: WebsocketServerResponse) => {
+      console.log('data from server', data)
+      setMessages([...messages, { ...data.message }])
     })
 
     socket.current.on('error', (err) => {
@@ -30,20 +32,27 @@ export default function GlobalChat() {
   }, [])
 
   const sendMessage = () => {
-    setMessages([...messages, userInput])
-    socket.current?.emit('message', {
-      userid: 'userTest',
-      message: userInput
-    })
+    const messageObject: Message = {
+      userId: 'Test user',
+      message: userInput,
+    }
+    setMessages([...messages, messageObject])
+    socket.current?.emit('message', messageObject)
   }
 
-  return <div>
-    <ul>
-      {messages.map((message, index) => <li key={index}>{message}</li>)}
-    </ul>
-    <input
-      type="text"
-      className="bg-slate-700" value={userInput} onChange={(event) => setUserInput(event.target.value)}></input>
-    <button onClick={() => sendMessage()}>Send</button>
-  </div>
+  return (
+    <div>
+      <ul>
+        {messages.map((message, index) =>
+          <li key={index}>
+            <span>{message.userId}:</span>
+            <span> {message.message}</span>
+          </li>)}
+      </ul>
+      <input
+        type="text"
+        className="bg-slate-700" value={userInput} onChange={(event) => setUserInput(event.target.value)}></input>
+      <button onClick={() => sendMessage()}>Send</button>
+    </div>
+  )
 }
