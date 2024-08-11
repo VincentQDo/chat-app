@@ -79,7 +79,7 @@ io.on('connection', (socket) => {
     db.run(insertQuery, [userId, message, currTime, currTime, chatId || 'global', 'sent'], (err) => {
       if (err) {
         console.error(err)
-        socket.emit('error', { error: 'Something went wrong while sending message' })
+        socket.emit('error', { error: 'Something went wrong while sending message', message: null })
       } else {
         console.info('[INFO] Inserted data into table');
         socket.broadcast.emit('message',

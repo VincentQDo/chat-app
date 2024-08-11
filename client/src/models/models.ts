@@ -21,6 +21,6 @@ export interface Relationship {
 }
 
 export interface WebsocketServerResponse {
-  error: string;
-  message: Message;
+  error: string | null;
+  message: Message | null;
 }
