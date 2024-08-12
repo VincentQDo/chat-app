@@ -1,7 +1,9 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Message, WebsocketServerResponse } from '@/models/models';
+import { Label } from '@radix-ui/react-label';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
@@ -58,12 +60,14 @@ export default function GlobalChat() {
             <span> {message.message}</span>
           </li>)}
       </ul>
-      <div className='flex flex-row'>
+      <div className='flex w-full max-w-sm items-center space-x-2'>
         {userName === 'Anon' ?
           <>
+            <Input name='username' type='text' placeholder='Username' onChange={(event) => setUserNameInput(event.target.value)}></Input>
             <Button onClick={() => handleSetUserNameClick()}>Set Username</Button>
           </> :
           <>
+            <Input name='message' type='text' placeholder='Message' onChange={(event) => setUserInput(event.target.value)}></Input>
             <Button onClick={() => handleSendMessage()}>Send</Button>
           </>
         }
