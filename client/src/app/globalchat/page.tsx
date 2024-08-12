@@ -10,12 +10,13 @@ import { io, Socket } from 'socket.io-client';
 export default function GlobalChat() {
   const [userInput, setUserInput] = useState('');
   const [userNameInput, setUserNameInput] = useState('');
-  const [userName, setUserName] = useState(localStorage.getItem('userName') ?? '');
+  const [userName, setUserName] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
 
   const socket = useRef<Socket | null>(null);
 
   useEffect(() => {
+    setUserName(localStorage.getItem('userName') ?? '');
     socket.current = io('http://localhost:8080');
     socket.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
@@ -42,6 +43,7 @@ export default function GlobalChat() {
       message: userInput,
     }
     setMessages([...messages, messageObject])
+    setUserInput('')
     socket.current?.emit('message', messageObject)
   }
 
