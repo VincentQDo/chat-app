@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from '@/components/ui/button';
 import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
@@ -60,10 +61,10 @@ export default function GlobalChat() {
       <div className='flex flex-row'>
         {userName === 'Anon' ?
           <>
-            <button onClick={() => handleSetUserNameClick()}>Set Username</button>
+            <Button onClick={() => handleSetUserNameClick()}>Set Username</Button>
           </> :
           <>
-            <button onClick={() => handleSendMessage()}>Send</button>
+            <Button onClick={() => handleSendMessage()}>Send</Button>
           </>
         }
       </div>
