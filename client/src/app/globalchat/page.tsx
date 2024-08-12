@@ -60,24 +60,9 @@ export default function GlobalChat() {
       <div className='flex flex-row'>
         {userName === 'Anon' ?
           <>
-            <input
-              type='text'
-              className='bg-slate-700'
-              placeholder='User Name'
-              value={userNameInput}
-              onChange={(event) => setUserNameInput(event.target.value)}
-            ></input>
             <button onClick={() => handleSetUserNameClick()}>Set Username</button>
           </> :
           <>
-            <input
-              type='text'
-              className='bg-slate-700 mb-2'
-              placeholder='Message'
-              value={userInput}
-              onChange={(event) => setUserInput(event.target.value)}
-            ></input>
-
             <button onClick={() => handleSendMessage()}>Send</button>
           </>
         }
