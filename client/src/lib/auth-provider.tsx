@@ -14,7 +14,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     if (savedToken) {
       setToken(savedToken);
     } else {
-      router.push('/login');
+      router.push('/signin');
     }
   }, [router])
   return <AuthContext.Provider value={token}>
