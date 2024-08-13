@@ -8,17 +8,22 @@ import { authenticate } from '@/services/firebase';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useState } from 'react';
 
 export default function Login() {
     const router = useRouter();
+    const [authError, setAuthError] = useState('')
 
     const submitHandler = async (formData: FormData) => {
         const [email, password] = [formData.get('email')?.toString(), formData.get('password')?.toString()];
         if (email && password) {
-            const user = await authenticate(email, password);
-            if (user) {
-                localStorage.setItem('token', await user.getIdToken());
+            const res = await authenticate(email, password);
+            if (res.user) {
+                console.log('user signed in')
+                localStorage.setItem('token', await res.user.getIdToken());
                 router.push('/');
+            } else if (res.error) {
+                setAuthError(res.error.message.split('Firebase: ')[1]);
             }
         }
     }
@@ -33,11 +38,14 @@ export default function Login() {
                             Enter your email below to login to your account
                         </p>
                     </div>
-                    <div className="grid gap-4">
+                    <form className="grid gap-4" action={submitHandler}>
+                        <p className="text-balance text-muted-foreground">
+                            {authError}
+                        </p>
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email</Label>
                             <Input
-                                id="email"
+                                name="email"
                                 type="email"
                                 placeholder="m@example.com"
                                 required
@@ -53,7 +61,7 @@ export default function Login() {
                                     Forgot your password?
                                 </Link>
                             </div>
-                            <Input id="password" type="password" required />
+                            <Input name="password" type="password" required />
                         </div>
                         <Button type="submit" className="w-full">
                             Login
@@ -61,7 +69,7 @@ export default function Login() {
                         <Button variant="outline" className="w-full">
                             Login with Google
                         </Button>
-                    </div>
+                    </form>
                     <div className="mt-4 text-center text-sm">
                         Don&apos;t have an account?{" "}
                         <Link href="../signup" className="underline">

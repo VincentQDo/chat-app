@@ -21,13 +21,13 @@ const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
 
-export const authenticate = async (email: string, password: string) => {
+export const authenticate = async (email: string, password: string): Promise<{ error: AuthError | null, user: User | null }> => {
     try {
         const credential = await signInWithEmailAndPassword(auth, email, password);
-        return credential.user;
-    } catch (error) {
+        return { error: null, user: credential.user };
+    } catch (error: any) {
         console.error(error);
-        return undefined;
+        return { error: error, user: null };
     }
 }
 
