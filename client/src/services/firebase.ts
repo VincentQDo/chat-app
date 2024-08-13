@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { AuthError, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile, User } from "firebase/auth";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -31,12 +31,13 @@ export const authenticate = async (email: string, password: string) => {
     }
 }
 
-export const signUp = async (email: string, password: string) => {
+export const signUp = async (email: string, password: string, username: string): Promise<{ error: AuthError | null, user: User | null }> => {
     try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
-        return credential.user;
-    } catch (error) {
+        await updateProfile(credential.user, { displayName: username });
+        return { error: null, user: credential.user };
+    } catch (error: any) {
         console.error(error);
-        return undefined;
+        return { error: error, user: null };
     }
 }

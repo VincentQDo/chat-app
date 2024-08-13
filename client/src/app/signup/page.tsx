@@ -7,13 +7,19 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useState } from 'react'
 
 export default function SignUp() {
+    const [authError, setAuthError] = useState('');
     const submitHandler = async (formData: FormData) => {
-        const [email, password] = [formData.get('email')?.toString(), formData.get('password')?.toString()]
-        if (email && password) {
-            const user = await signUp(email, password)
-            console.log(user)
+        const [email, password, username] = [formData.get('email')?.toString(), formData.get('password')?.toString(), formData.get('username')?.toString()]
+        if (email && password && username) {
+            const res = await signUp(email, password, username)
+            if (res.error) {
+                setAuthError(res.error.message.split('Firebase: ')[1]);
+            } else {
+                console.log(res.user)
+            }
         }
     }
 
@@ -27,11 +33,11 @@ export default function SignUp() {
                             Enter your information to create an account
                         </p>
                     </div>
-                    <div className="grid gap-4">
+                    <form className="grid gap-4" action={submitHandler}>
                         <div className="grid gap-2">
                             <Label htmlFor="username">Username</Label>
                             <Input
-                                id="username"
+                                name="username"
                                 type="text"
                                 required
                             />
@@ -39,7 +45,7 @@ export default function SignUp() {
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email</Label>
                             <Input
-                                id="email"
+                                name="email"
                                 type="email"
                                 placeholder="m@example.com"
                                 required
@@ -49,7 +55,8 @@ export default function SignUp() {
                             <div className="flex items-center">
                                 <Label htmlFor="password">Password</Label>
                             </div>
-                            <Input id="password" type="password" required />
+                            <Input name="password" type="password" required />
+                            <span>{authError}</span>
                         </div>
                         <Button type="submit" className="w-full">
                             Create an account
@@ -57,7 +64,7 @@ export default function SignUp() {
                         <Button variant="outline" className="w-full">
                             Signup with Google
                         </Button>
-                    </div>
+                    </form>
                     <div className="mt-4 text-center text-sm">
                         Already have an account?{" "}
                         <Link href="../signin" className="underline">
