@@ -3,11 +3,11 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Message, WebsocketServerResponse } from '@/models/models';
-import { Label } from '@radix-ui/react-label';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 export default function GlobalChat() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [userInput, setUserInput] = useState('');
   const [userNameInput, setUserNameInput] = useState('');
   const [userName, setUserName] = useState('');
@@ -17,7 +17,10 @@ export default function GlobalChat() {
 
   useEffect(() => {
     setUserName(localStorage.getItem('userName') ?? '');
-    socket.current = io('http://localhost:8080');
+    if (!apiUrl) {
+      return;
+    }
+    socket.current = io(apiUrl);
     socket.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
     })
@@ -65,11 +68,11 @@ export default function GlobalChat() {
       <div className='flex w-full max-w-sm items-center space-x-2'>
         {userName === 'Anon' ?
           <>
-            <Input name='username' type='text' placeholder='Username' onChange={(event) => setUserNameInput(event.target.value)}></Input>
+            <Input name='username' type='text' placeholder='Username' value={userNameInput} onChange={(event) => setUserNameInput(event.target.value)}></Input>
             <Button onClick={() => handleSetUserNameClick()}>Set Username</Button>
           </> :
           <>
-            <Input name='message' type='text' placeholder='Message' onChange={(event) => setUserInput(event.target.value)}></Input>
+            <Input name='message' type='text' placeholder='Message' value={userInput} onChange={(event) => setUserInput(event.target.value)}></Input>
             <Button onClick={() => handleSendMessage()}>Send</Button>
           </>
         }
