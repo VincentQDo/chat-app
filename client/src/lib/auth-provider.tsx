@@ -1,14 +1,14 @@
 'use client'
 
 import { auth, validateToken } from "@/services/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { createContext, useEffect, useState } from "react";
 
-export const AuthContext = createContext<string | null>(null);
+export const AuthContext = createContext<User | null>(null);
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   useEffect(() => {
     onAuthStateChanged(auth, async (user) => {
@@ -18,6 +18,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         console.log(authRes)
         if (authRes.error === null) {
           console.log('Token authenticated')
+          setUser(authRes.user)
         } else {
           // Token expired or something went wrong while authenticating
           console.log('Token expired')
@@ -32,8 +33,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
     })
 
-  }, [router, auth])
-  return <AuthContext.Provider value={token}>
+  }, [router])
+  return <AuthContext.Provider value={user}>
     {children}
   </AuthContext.Provider>
 }
