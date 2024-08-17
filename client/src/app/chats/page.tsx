@@ -1,23 +1,17 @@
 import {
     Bird,
     Book,
-    Bot,
-    Code2,
     CornerDownLeft,
     LifeBuoy,
-    Mic,
-    Paperclip,
     Rabbit,
     Settings,
     Settings2,
     Share,
     SquareTerminal,
     SquareUser,
-    Triangle,
     Turtle,
 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
     Drawer,
