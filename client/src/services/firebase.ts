@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { AuthError, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile, User } from "firebase/auth";
+import { AuthError, createUserWithEmailAndPassword, getAuth, signInWithCustomToken, signInWithEmailAndPassword, updateProfile, User } from "firebase/auth";
+import { env } from "process";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -16,12 +17,17 @@ const firebaseConfig = {
     measurementId: "G-7JSK298SJC"
 };
 
+export interface AuthResult {
+    error: AuthError | string | null;
+    user: User | null;
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-const auth = getAuth(app);
+export const auth = getAuth(app);
 
-export const authenticate = async (email: string, password: string): Promise<{ error: AuthError | null, user: User | null }> => {
+export const authenticate = async (email: string, password: string): Promise<AuthResult> => {
     try {
         const credential = await signInWithEmailAndPassword(auth, email, password);
         return { error: null, user: credential.user };
@@ -31,11 +37,30 @@ export const authenticate = async (email: string, password: string): Promise<{ e
     }
 }
 
-export const signUp = async (email: string, password: string, username: string): Promise<{ error: AuthError | null, user: User | null }> => {
+export const signUp = async (email: string, password: string, username: string): Promise<AuthResult> => {
     try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(credential.user, { displayName: username });
         return { error: null, user: credential.user };
+    } catch (error: any) {
+        console.error(error);
+        return { error: error, user: null };
+    }
+}
+
+export async function validateToken(token: string | null): Promise<AuthResult> {
+    if (token == null) return { error: null, user: null };
+    try {
+        if (env.NEXT_PUBLIC_API_URL) {
+            const response = await fetch(env.NEXT_PUBLIC_API_URL + '/authenticate');
+            if (response.status === 200) {
+                return { error: null, user: null }
+            } else {
+                return { error: response.statusText, user: null }
+            }
+        } else {
+            return { error: 'Invalid API URL', user: null }
+        }
     } catch (error: any) {
         console.error(error);
         return { error: error, user: null };

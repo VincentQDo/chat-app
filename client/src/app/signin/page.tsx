@@ -19,9 +19,14 @@ export default function Login() {
         if (email && password) {
             const res = await authenticate(email, password);
             if (res.user) {
-                console.log('user signed in')
-                localStorage.setItem('token', await res.user.getIdToken());
-                router.push('/');
+                if (res.user.displayName) {
+                    localStorage.setItem('authToken', await res.user.getIdToken());
+                    localStorage.setItem('userName', res.user.displayName);
+                    router.push('/');
+                } else {
+                    localStorage.removeItem('authToken')
+                    localStorage.removeItem('userName')
+                }
             } else if (res.error) {
                 setAuthError(res.error.message.split('Firebase: ')[1]);
             }
