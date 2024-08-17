@@ -11,7 +11,11 @@ const db = new sqlite3.Database('./database/chatlist.db')
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-// app.use(verifyToken);
+app.use(verifyToken);
+
+app.get('/authenticate', (req, res) => {
+  res.send({ res: 'Success', err: null })
+})
 
 app.get('/globalmessages', (req, res) => {
   db.all("SELECT * FROM messages WHERE chatId = ?", ['global'], (err, rows) => {
