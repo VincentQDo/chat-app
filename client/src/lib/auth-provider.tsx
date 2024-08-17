@@ -18,7 +18,6 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         console.log(authRes)
         if (authRes.error === null) {
           console.log('Token authenticated')
-          router.push('/globalchat')
         } else {
           // Token expired or something went wrong while authenticating
           console.log('Token expired')
