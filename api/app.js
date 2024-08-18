@@ -81,7 +81,7 @@ io.on('connection', (socket) => {
     const currTime = Date.now();
     const { userId, message, chatId } = data;
     const insertQuery = `INSERT INTO messages (userId, message, createdAt, updatedAt, chatId, status) VALUES (?, ?, ?, ?, ?, ?)`
-    db.run(insertQuery, [userId, message, currTime, currTime, chatId || 'global', 'sent'], (err) => {
+    db.run(insertQuery, [userId || 'Annonymous', message, currTime, currTime, chatId || 'global', 'sent'], (err) => {
       if (err) {
         console.error(err)
         socket.emit('error', { error: 'Something went wrong while sending message', message: null })
@@ -110,7 +110,9 @@ io.on('connection', (socket) => {
   });
 });
 
+let HOST = '0.0.0.0'
+let PORT = 8080
 // Start the HTTP server
-server.listen(8080, () => {
-  console.log('Server is listening on port 8080');
+server.listen(PORT, HOST, () => {
+  console.log(`Network: http://${HOST}:${PORT}`);
 });
