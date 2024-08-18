@@ -59,6 +59,7 @@ export async function validateToken(token: string | null): Promise<AuthResult> {
                 return { error: response.statusText, user: null }
             }
         } else {
+            console.log('API URL: ', env.NEXT_PUBLIC_API_URL)
             return { error: 'Invalid API URL', user: null }
         }
     } catch (error: any) {

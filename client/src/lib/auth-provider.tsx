@@ -15,7 +15,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       if (user) {
         // signed in
         const authRes = await validateToken(localStorage.getItem('authToken'))
-        console.log(authRes)
+        console.log('validate token result: ', authRes)
         if (authRes.error === null) {
           console.log('Token authenticated')
           setUser(authRes.user)

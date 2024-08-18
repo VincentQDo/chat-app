@@ -43,7 +43,7 @@ export default function GlobalChat() {
 
     socket.current.on('message', (data: WebsocketServerResponse) => {
       if (data.message) {
-        setMessages((prevMessages) => [...prevMessages, { ...data.message! }])
+        setMessages((prevMessages) => [{ ...data.message! }, ...prevMessages])
       }
     })
 
@@ -57,11 +57,11 @@ export default function GlobalChat() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         }
       })
-      const messages = await globalMessageHistory.json();
-      console.log(messages.map((e: any) => e.message));
+      const messages: Message[] = await globalMessageHistory.json()
+      messages.reverse()
       setMessages(messages)
     }
 
@@ -77,7 +77,7 @@ export default function GlobalChat() {
       userId: userName,
       message: userInput,
     }
-    setMessages([...messages, messageObject])
+    setMessages([messageObject, ...messages])
     setUserInput('')
     socket.current?.emit('message', messageObject)
   }
@@ -165,7 +165,7 @@ export default function GlobalChat() {
           </Tooltip>
         </nav>
       </aside>
-      <div className="flex flex-col">
+      <div className="flex flex-col h-screen">
         <header className="sticky top-0 z-10 flex h-[57px] items-center gap-1 border-b bg-background px-4">
           <h1 className="text-xl font-semibold">Global Chat</h1>
           <Button
@@ -177,10 +177,10 @@ export default function GlobalChat() {
             Share
           </Button>
         </header>
-        <main className="grid flex-1 gap-4 overflow-auto p-4">
+        <main className="grid flex-1 overflow-hidden p-4">
           <div className="relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 lg:col-span-2">
-            <div className="flex-1" >
-              {messages.map(e => <p key={e.updatedAt}>{e.message}</p>)}
+            <div className="flex-1 overflow-auto flex flex-col-reverse" >
+              {messages.map((data, index) => <p key={index}><span>{data.userId}: </span>{data.message}</p>)}
             </div>
             <form
               className="relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring"
@@ -193,7 +193,7 @@ export default function GlobalChat() {
               <Textarea
                 id="message"
                 placeholder="Type your message here..."
-                className="min-h-12 resize-none border-0 p-3 shadow-none focus-visible:ring-0"
+                className="min-h-12 resize-none border-0 p-3 shadow-none focus-visible:ring-0 text-base"
                 value={userInput}
                 onChange={(event) => setUserInput(event.target.value)}
               />
