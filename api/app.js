@@ -18,6 +18,7 @@ app.get('/authenticate', (req, res) => {
 })
 
 app.get('/globalmessages', (req, res) => {
+  console.log('[INFO] Getting global messages')
   db.all("SELECT * FROM messages WHERE chatId = ?", ['global'], (err, rows) => {
     if (err) {
       console.error('[ERROR] Something went wrong while fetching global chats. ', err)
