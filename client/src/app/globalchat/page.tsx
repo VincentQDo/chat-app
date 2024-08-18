@@ -21,7 +21,6 @@ import {
 import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { global } from "styled-jsx/css";
 
 export default function GlobalChat() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -54,8 +53,16 @@ export default function GlobalChat() {
 
     // get messages
     const data = async () => {
-      const globalMessageHistory = await fetch(`${apiUrl}/globalmessages`, { headers: })
-      console.log(globalMessageHistory)
+      const globalMessageHistory = await fetch(`${apiUrl}/globalmessages`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      })
+      const messages = await globalMessageHistory.json();
+      console.log(messages.map((e: any) => e.message));
+      setMessages(messages)
     }
 
     data()
