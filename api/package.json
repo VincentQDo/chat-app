@@ -2,11 +2,11 @@
   "name": "banterbox-api",
   "version": "0.0.1",
   "description": "",
-  "main": "app.js",
+  "main": "src/app.js",
   "type": "module",
   "scripts": {
     "test": "test",
-    "dev": "nodemon src/app.js",
+    "dev": "nodemon --cwd src app.js",
     "debug": "nodemon --inspect app.js"
   },
   "author": "",

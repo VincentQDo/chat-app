@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import http from 'http';
 import cors from 'cors';
 import sqlite3 from 'sqlite3';
@@ -7,7 +8,16 @@ import bodyParser from 'body-parser';
 import { verifyToken } from './utilities/token-utilities.js';
 
 // Create an Express application
-const db = new sqlite3.Database('./database/chatlist.db')
+const __dirname = path.resolve()
+const dbPath = path.join(__dirname, 'database', 'chatlist.db')
+console.log('[INFO] Db path: ', dbPath)
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('[ERROR] ', err.message)
+  } else {
+    console.log('[INFO] Connected to database')
+  }
+})
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
