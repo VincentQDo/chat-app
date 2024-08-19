@@ -177,7 +177,7 @@ export default function GlobalChat() {
             Share
           </Button>
         </header>
-        <main className="grid flex-1 overflow-hidden p-4">
+        <main className="flex-1 overflow-hidden p-4">
           <div className="relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 lg:col-span-2">
             <div className="flex-1 overflow-auto flex flex-col-reverse" >
               {messages.map((data, index) => <p key={index}><span>{data.userId}: </span>{data.message}</p>)}
