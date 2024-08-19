@@ -86,6 +86,8 @@ io.on('connection', (socket) => {
   console.info(`[INFO] User connected: ${socket.id}`)
   const connectedSockets = io.sockets.sockets;
   console.info(`[INFO] Number of connected users: `, connectedSockets.size);
+  socket.broadcast.emit('userConnected', { error: null, message: { users: connectedSockets.size } })
+  socket.emit('userConnected', { error: null, message: { users: connectedSockets.size } })
   socket.on('message', (data) => {
     console.info(`[INFO] Socket ${socket.id} sent: `, data)
     const currTime = Date.now();
@@ -117,6 +119,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.info('[INFO] User disconnected: ', socket.id);
+    socket.broadcast.emit('userDisconnected', { error: null, message: { users: connectedSockets.size } })
   });
 });
 
