@@ -4,7 +4,7 @@ import cors from 'cors';
 import sqlite3 from 'sqlite3';
 import { Server } from 'socket.io';
 import bodyParser from 'body-parser';
-import { verifyToken, websocketVerifyToken } from './utilities/token-utilities.js';
+import { verifyToken } from './utilities/token-utilities.js';
 
 // Create an Express application
 const db = new sqlite3.Database('./database/chatlist.db')
