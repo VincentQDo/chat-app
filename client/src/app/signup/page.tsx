@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState } from 'react'
 import { AuthError } from 'firebase/auth'
+import { useRouter } from 'next/navigation'
 
 export default function SignUp() {
+    const router = useRouter();
     const [authError, setAuthError] = useState('');
     const submitHandler = async (formData: FormData) => {
         const [email, password, username] = [formData.get('email')?.toString(), formData.get('password')?.toString(), formData.get('username')?.toString()]
@@ -20,6 +22,7 @@ export default function SignUp() {
                 setAuthError((res.error as AuthError).message.split('Firebase: ')[1]);
             } else {
                 console.log(res.user)
+                router.push('/signin')
             }
         }
     }
