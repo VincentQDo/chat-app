@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState } from 'react'
+import { AuthError } from 'firebase/auth'
 
 export default function SignUp() {
     const [authError, setAuthError] = useState('');
@@ -16,7 +17,7 @@ export default function SignUp() {
         if (email && password && username) {
             const res = await signUp(email, password, username)
             if (res.error) {
-                setAuthError(res.error.message.split('Firebase: ')[1]);
+                setAuthError((res.error as AuthError).message.split('Firebase: ')[1]);
             } else {
                 console.log(res.user)
             }
