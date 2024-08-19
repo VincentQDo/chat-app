@@ -26,6 +26,7 @@ export default function GlobalChat() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [userInput, setUserInput] = useState('');
   const [userName, setUserName] = useState('');
+  const [numOfUsers, setNumOfUsers] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
 
   const socket = useRef<Socket | null>(null);
@@ -44,6 +45,24 @@ export default function GlobalChat() {
     socket.current.on('message', (data: WebsocketServerResponse) => {
       if (data.message) {
         setMessages((prevMessages) => [{ ...data.message! }, ...prevMessages])
+      }
+    })
+
+    socket.current.on('userConnected', (data: WebsocketServerResponse) => {
+      if (data) {
+        const anyType = data as any;
+        setNumOfUsers(anyType.message.users)
+        console.log('User Connected: ', anyType.message.users);
+        setMessages((prevMessages) => [{ message: 'User connected', userId: 'System' }, ...prevMessages])
+      }
+    })
+
+    socket.current.on('userDisconnected', (data: WebsocketServerResponse) => {
+      if (data) {
+        const anyType = data as any;
+        setNumOfUsers(anyType.message.users)
+        console.log('User disconnected: ', anyType.message.users);
+        setMessages((prevMessages) => [{ message: 'User disconnected', userId: 'System' }, ...prevMessages])
       }
     })
 
@@ -129,6 +148,21 @@ export default function GlobalChat() {
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={5}>
               Settings
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-lg"
+                aria-label="Users online"
+              >
+                {numOfUsers}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={5}>
+              Users Online
             </TooltipContent>
           </Tooltip>
         </nav>
