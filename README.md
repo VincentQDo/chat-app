@@ -1,2 +1,4 @@
 # chat-app
-Real time chat client
+Hosting providers:
+UI: Vercel
+Backend: Fly.io
