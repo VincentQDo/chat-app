@@ -23,4 +23,5 @@ jobs:
         env:
           FLYCTL_INSTALL: "/home/runner/.fly"
           PATH: "/home/runner/.fly/bin:$PATH"
+          FLY_TOKEN: ${{ secrets.FLY_TOKEN }}
         run: flyctl deploy -t $FLY_TOKEN
