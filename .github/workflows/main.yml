@@ -23,4 +23,4 @@ jobs:
         env:
           FLYCTL_INSTALL: "/home/runner/.fly"
           PATH: "/home/runner/.fly/bin:$PATH"
-        run: flyctl deploy
+        run: flyctl deploy -t $FLY_TOKEN
