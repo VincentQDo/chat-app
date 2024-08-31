@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "api/**"
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -18,8 +19,8 @@ jobs:
       - name: Install fly CLI
         run: curl -L https://fly.io/install.sh | sh
 
-      - name: Export fly ENV
-        run: export FLYCTL_INSTALL="/home/runner/.fly" && export PATH="$FLYCTL_INSTALL/bin:$PATH"
-
       - name: Deploy
+        env:
+          FLYCTL_INSTALL: "/home/runner/.fly"
+          PATH: "/home/runner/.fly/bin:$PATH"
         run: flyctl deploy
