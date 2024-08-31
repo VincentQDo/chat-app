@@ -18,5 +18,8 @@ jobs:
       - name: Install fly CLI
         run: curl -L https://fly.io/install.sh | sh
 
+      - name: Export fly ENV
+        run: export FLYCTL_INSTALL="/home/runner/.fly" && export PATH="$FLYCTL_INSTALL/bin:$PATH"
+
       - name: Deploy
         run: flyctl deploy
