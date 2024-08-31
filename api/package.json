@@ -2,14 +2,23 @@
   "name": "banterbox-api",
   "version": "0.0.1",
   "description": "",
-  "main": "app.js",
+  "main": "src/app.js",
   "type": "module",
   "scripts": {
-    "test": "test"
+    "test": "test",
+    "dev": "nodemon --cwd src app.js",
+    "debug": "nodemon --inspect app.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ws": "^8.16.0"
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.2.0",
+    "socket.io": "^4.7.5",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
   }
 }
