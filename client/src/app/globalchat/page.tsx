@@ -31,6 +31,18 @@ export default function GlobalChat() {
 
   const socket = useRef<Socket | null>(null);
 
+  const sendNotification = (data: WebsocketServerResponse) => {
+    if (!("Notification" in window)) return
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission().then((result) => {
+        console.log(result)
+        new Notification("New Message", { body: data.message?.message })
+      })
+    } else {
+      new Notification("New Message", { body: data.message?.message })
+    }
+
+  }
   useEffect(() => {
     setUserName(localStorage.getItem('userName') ?? '')
     console.log('API URL: ', apiUrl)
@@ -45,6 +57,7 @@ export default function GlobalChat() {
     socket.current.on('message', (data: WebsocketServerResponse) => {
       if (data.message) {
         setMessages((prevMessages) => [{ ...data.message! }, ...prevMessages])
+        sendNotification(data)
       }
     })
 
