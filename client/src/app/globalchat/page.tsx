@@ -21,7 +21,7 @@ import {
 import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { getBackendBaseUrl } from "@/services/backend-service";
+import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
 
 export default function GlobalChat() {
   const apiUrl = getBackendBaseUrl();
@@ -86,14 +86,7 @@ export default function GlobalChat() {
 
     // get messages
     const data = async () => {
-      const globalMessageHistory = await fetch(`${apiUrl}/globalmessages`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        }
-      })
-      const messages: Message[] = await globalMessageHistory.json()
+      const messages = await (await fetchData('/globalmessages')).json()
       messages.reverse()
       setMessages(messages)
     }
@@ -228,7 +221,11 @@ export default function GlobalChat() {
         <main className="flex-1 overflow-hidden p-4">
           <div className="relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 lg:col-span-2">
             <div className="flex-1 overflow-auto flex flex-col-reverse" >
-              {messages.map((data, index) => <p key={index}><span>{data.userId}: </span>{`${data.message} ${new Date(data.updatedAt!).toLocaleString()}`}</p>)}
+              {messages.map((data, index) =>
+                <p key={index} title={new Date(data.updatedAt!).toLocaleString()}>
+                  {`${data.userId}: ${data.message}`}
+                </p>
+              )}
             </div>
             <form
               className="relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring"
