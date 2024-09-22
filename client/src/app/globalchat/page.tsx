@@ -21,9 +21,10 @@ import {
 import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getBackendBaseUrl } from "@/services/backend-service";
 
 export default function GlobalChat() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = getBackendBaseUrl();
   const [userInput, setUserInput] = useState('');
   const [userName, setUserName] = useState('');
   const [numOfUsers, setNumOfUsers] = useState(0);
@@ -227,7 +228,7 @@ export default function GlobalChat() {
         <main className="flex-1 overflow-hidden p-4">
           <div className="relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 lg:col-span-2">
             <div className="flex-1 overflow-auto flex flex-col-reverse" >
-              {messages.map((data, index) => <p key={index}><span>{data.userId}: </span>{data.message}</p>)}
+              {messages.map((data, index) => <p key={index}><span>{data.userId}: </span>{`${data.message} ${new Date(data.updatedAt!).toLocaleString()}`}</p>)}
             </div>
             <form
               className="relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring"
