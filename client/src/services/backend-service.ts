@@ -1,8 +1,7 @@
-import { env } from "process";
-
 export function getBackendBaseUrl() {
-    if (env.NEXT_PUBLIC_API_URL) {
-        return env.NEXT_PUBLIC_API_URL;
+    console.log(process.env.NEXT_PUBLIC_API_URL)
+    if (process.env.NEXT_PUBLIC_API_URL) {
+        return process.env.NEXT_PUBLIC_API_URL;
     } else {
         return "http://localhost:8080";
     }

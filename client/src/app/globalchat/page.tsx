@@ -30,14 +30,15 @@ export default function GlobalChat() {
   const [numOfUsers, setNumOfUsers] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [numOfUnreadMessages, setNumOfUnreadMessages] = useState(0);
-  const [isInputFocus, setIsInputFocus] = useState(false);
+  const isInputFocus = useRef(false);
 
   const socket = useRef<Socket | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const sendNotification = (data: WebsocketServerResponse) => {
     setNumOfUnreadMessages((prev) => prev + 1)
-    if (isInputFocus) return
+    console.log(isInputFocus.current)
+    if (isInputFocus.current) return
     if (!("Notification" in window)) return
     if (Notification.permission !== "granted") {
       Notification.requestPermission().then((result) => {
@@ -49,14 +50,20 @@ export default function GlobalChat() {
     }
   }
 
+  useEffect(() => {
+    console.log('input focus is changeing ', isInputFocus)
+  }, [isInputFocus])
+
   const onInputFocus = () => {
     document.title = 'No New Message';
-    setIsInputFocus(true)
+    isInputFocus.current = true
+    console.log('input is focused')
     setNumOfUnreadMessages(0)
   }
 
   const onInputBlur = () => {
-    setIsInputFocus(false);
+    isInputFocus.current = false
+    console.log('input is not focused')
   }
 
   useEffect(() => {
