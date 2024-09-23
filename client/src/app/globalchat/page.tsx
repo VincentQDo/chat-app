@@ -30,11 +30,14 @@ export default function GlobalChat() {
   const [numOfUsers, setNumOfUsers] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [numOfUnreadMessages, setNumOfUnreadMessages] = useState(0);
+  const [isInputFocus, setIsInputFocus] = useState(false);
 
   const socket = useRef<Socket | null>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const sendNotification = (data: WebsocketServerResponse) => {
     setNumOfUnreadMessages((prev) => prev + 1)
+    if (isInputFocus) return
     if (!("Notification" in window)) return
     if (Notification.permission !== "granted") {
       Notification.requestPermission().then((result) => {
@@ -48,7 +51,12 @@ export default function GlobalChat() {
 
   const onInputFocus = () => {
     document.title = 'No New Message';
+    setIsInputFocus(true)
     setNumOfUnreadMessages(0)
+  }
+
+  const onInputBlur = () => {
+    setIsInputFocus(false);
   }
 
   useEffect(() => {
@@ -125,7 +133,7 @@ export default function GlobalChat() {
 
   return (
     <>
-      <div className="grid h-screen w-full pl-[56px]" onFocus={() => onInputFocus()}>
+      <div className="grid h-screen w-full pl-[56px]">
         <aside className="inset-y fixed  left-0 z-20 flex h-full flex-col border-r">
           <nav className="grid gap-1 p-2">
             <Tooltip>
@@ -252,11 +260,13 @@ export default function GlobalChat() {
                   Message
                 </Label>
                 <Textarea
+                  ref={textAreaRef}
                   id="message"
                   placeholder="Type your message here..."
                   className="min-h-12 resize-none border-0 p-3 shadow-none focus-visible:ring-0 text-base"
                   value={userInput}
                   onFocus={() => onInputFocus()}
+                  onBlur={() => onInputBlur()}
                   onChange={(event) => setUserInput(event.target.value)}
                 />
                 <div className="flex items-center p-3 pt-0">
