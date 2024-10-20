@@ -6,8 +6,8 @@ export async function verifyToken(req, res, next) {
     console.log('[INFO] Verifying token')
     const unauthResponse = { code: '403', msg: 'Token not found' };
     const token = req.headers.authorization?.split('Bearer ')[1];
-    next()
-    return
+    console.log('[INFO] Token: ', token)
+    console.log('[INFO] Request Headers: ', req.headers)
     if (!token || token === 'null') {
         console.error('[ERROR] Invalid token.', token)
         return res.status(403).send(unauthResponse);
