@@ -26,6 +26,7 @@ app.use(verifyToken);
 app.get('/authenticate', (req, res) => {
   // Because the middle ware verify token already do token validation, if the code gets to here
   // the user is already validated this is just a utility endpoint for the frontend to make sure user is authetnicated
+  // idk if i even need this lmao
   res.send({ res: 'Success', err: null })
 })
 

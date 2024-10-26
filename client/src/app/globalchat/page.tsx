@@ -116,8 +116,11 @@ export default function GlobalChat() {
 
     // get messages
     const data = async () => {
-      const messages = await (await fetchData('/globalmessages')).json()
-      messages.reverse()
+      const headers = await fetchData('/globalmessages')
+      let messages = []
+      if (headers.status === 200) {
+        messages = await headers.json()
+      }
       setMessages(messages)
     }
 
