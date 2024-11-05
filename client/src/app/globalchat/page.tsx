@@ -55,7 +55,7 @@ export default function GlobalChat() {
   }, [isInputFocus])
 
   const onInputFocus = () => {
-    document.title = 'No New Message';
+    document.title = 'Nothing New';
     isInputFocus.current = true
     console.log('input is focused')
     setNumOfUnreadMessages(0)
@@ -68,9 +68,9 @@ export default function GlobalChat() {
 
   useEffect(() => {
     if (numOfUnreadMessages === 0) {
-      document.title = `No New Message`
+      document.title = `Nothing new`
     } else {
-      document.title = `(${numOfUnreadMessages}) New Message`
+      document.title = `(${numOfUnreadMessages}) New!`
     }
   }, [numOfUnreadMessages])
 
