@@ -80,7 +80,7 @@ export default function GlobalChat() {
     if (!apiUrl) {
       return;
     }
-    socket.current = io(apiUrl);
+    socket.current = io(apiUrl, { auth: { token: localStorage.getItem('authToken') } });
     socket.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
     })

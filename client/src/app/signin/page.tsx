@@ -25,6 +25,7 @@ export default function Login() {
                     localStorage.setItem('userName', res.user.displayName);
                     router.push('/');
                 } else {
+                    console.log('Log out user')
                     localStorage.removeItem('authToken')
                     localStorage.removeItem('userName')
                 }

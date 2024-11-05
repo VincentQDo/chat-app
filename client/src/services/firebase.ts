@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { AuthError, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile, User } from "firebase/auth";
 import { env } from "process";
-import { getBackendBaseUrl } from "./backend-service";
+import { fetchData, getBackendBaseUrl } from "./backend-service";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -52,7 +52,7 @@ export const signUp = async (email: string, password: string, username: string):
 export async function validateToken(token: string | null): Promise<AuthResult> {
     if (token == null) return { error: 'wtf where is the auth token?', user: null };
     try {
-        const response = await fetch(getBackendBaseUrl() + '/authenticate');
+        const response = await fetchData('/authenticate');
         console.log('Authenticate res: ', response)
         if (response.status === 200) {
             return { error: null, user: null }
