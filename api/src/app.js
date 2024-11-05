@@ -5,7 +5,7 @@ import cors from 'cors';
 import sqlite3 from 'sqlite3';
 import { Server } from 'socket.io';
 import bodyParser from 'body-parser';
-import { verifyToken } from './utilities/token-utilities.js';
+import { verifyToken, websocketVerifyToken } from './utilities/token-utilities.js';
 
 // Create an Express application
 const __dirname = path.resolve()
@@ -82,7 +82,7 @@ const io = new Server(server, {
 });
 
 // Middleware to verify Firebase ID token
-// io.use(websocketVerifyToken);
+io.use(websocketVerifyToken);
 
 io.on('connection', (socket) => {
   // console.log(`User ${socket.user.uid} connected`);
