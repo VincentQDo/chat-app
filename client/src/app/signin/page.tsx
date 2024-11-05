@@ -20,10 +20,12 @@ export default function Login() {
             const res = await authenticate(email, password);
             if (res.user) {
                 if (res.user.displayName) {
-                    localStorage.setItem('authToken', await res.user.getIdToken());
+                    const authToken = await res.user.getIdToken();
+                    localStorage.setItem('authToken', authToken);
                     localStorage.setItem('userName', res.user.displayName);
                     router.push('/');
                 } else {
+                    console.log('Log out user')
                     localStorage.removeItem('authToken')
                     localStorage.removeItem('userName')
                 }

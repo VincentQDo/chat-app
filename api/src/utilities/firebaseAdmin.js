@@ -1,9 +1,12 @@
 // firebaseAdmin.js
 import admin from 'firebase-admin';
-import { applicationDefault } from 'firebase-admin/app';
+
+console.log('[INFO] service account env: ', process.env.FIREBASE_SERVICEACCOUNT)
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICEACCOUNT)
+console.log('[INFO] service account: ', serviceAccount)
 
 admin.initializeApp({
-    credential: applicationDefault()
+    credential: admin.credential.cert(serviceAccount)
 });
 
 export default admin;

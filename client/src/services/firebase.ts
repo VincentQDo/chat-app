@@ -1,7 +1,8 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { AuthError, createUserWithEmailAndPassword, getAuth, signInWithCustomToken, signInWithEmailAndPassword, updateProfile, User } from "firebase/auth";
+import { AuthError, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile, User } from "firebase/auth";
 import { env } from "process";
+import { fetchData, getBackendBaseUrl } from "./backend-service";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -49,21 +50,17 @@ export const signUp = async (email: string, password: string, username: string):
 }
 
 export async function validateToken(token: string | null): Promise<AuthResult> {
-    if (token == null) return { error: null, user: null };
+    if (token == null) return { error: 'wtf where is the auth token?', user: null };
     try {
-        if (env.NEXT_PUBLIC_API_URL) {
-            const response = await fetch(env.NEXT_PUBLIC_API_URL + '/authenticate');
-            if (response.status === 200) {
-                return { error: null, user: null }
-            } else {
-                return { error: response.statusText, user: null }
-            }
+        const response = await fetchData('/authenticate');
+        console.log('Authenticate res: ', response)
+        if (response.status === 200) {
+            return { error: null, user: null }
         } else {
-            console.log('API URL: ', env.NEXT_PUBLIC_API_URL)
-            return { error: 'Invalid API URL', user: null }
+            return { error: response.statusText, user: null }
         }
     } catch (error: any) {
-        console.error(error);
+        console.error('Soem kind of error during auth: ', error);
         return { error: error, user: null };
     }
 }

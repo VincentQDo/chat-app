@@ -21,17 +21,24 @@ import {
 import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
 
 export default function GlobalChat() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = getBackendBaseUrl();
   const [userInput, setUserInput] = useState('');
   const [userName, setUserName] = useState('');
   const [numOfUsers, setNumOfUsers] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [numOfUnreadMessages, setNumOfUnreadMessages] = useState(0);
+  const isInputFocus = useRef(false);
 
   const socket = useRef<Socket | null>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const sendNotification = (data: WebsocketServerResponse) => {
+    setNumOfUnreadMessages((prev) => prev + 1)
+    console.log(isInputFocus.current)
+    if (isInputFocus.current) return
     if (!("Notification" in window)) return
     if (Notification.permission !== "granted") {
       Notification.requestPermission().then((result) => {
@@ -41,15 +48,39 @@ export default function GlobalChat() {
     } else {
       new Notification("New Message", { body: data.message?.message })
     }
-
   }
+
+  useEffect(() => {
+    console.log('input focus is changeing ', isInputFocus)
+  }, [isInputFocus])
+
+  const onInputFocus = () => {
+    document.title = 'Nothing New';
+    isInputFocus.current = true
+    console.log('input is focused')
+    setNumOfUnreadMessages(0)
+  }
+
+  const onInputBlur = () => {
+    isInputFocus.current = false
+    console.log('input is not focused')
+  }
+
+  useEffect(() => {
+    if (numOfUnreadMessages === 0) {
+      document.title = `Nothing new`
+    } else {
+      document.title = `(${numOfUnreadMessages}) New!`
+    }
+  }, [numOfUnreadMessages])
+
   useEffect(() => {
     setUserName(localStorage.getItem('userName') ?? '')
     console.log('API URL: ', apiUrl)
     if (!apiUrl) {
       return;
     }
-    socket.current = io(apiUrl);
+    socket.current = io(apiUrl, { auth: { token: localStorage.getItem('authToken') } });
     socket.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
     })
@@ -85,15 +116,11 @@ export default function GlobalChat() {
 
     // get messages
     const data = async () => {
-      const globalMessageHistory = await fetch(`${apiUrl}/globalmessages`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        }
-      })
-      const messages: Message[] = await globalMessageHistory.json()
-      messages.reverse()
+      const headers = await fetchData('/globalmessages')
+      let messages = []
+      if (headers.status === 200) {
+        messages = await headers.json()
+      }
       setMessages(messages)
     }
 
@@ -115,145 +142,153 @@ export default function GlobalChat() {
   }
 
   return (
-    <div className="grid h-screen w-full pl-[56px]">
-      <aside className="inset-y fixed  left-0 z-20 flex h-full flex-col border-r">
-        <nav className="grid gap-1 p-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-lg bg-muted"
-                aria-label="Playground"
-              >
-                <SquareTerminal className="size-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={5}>
-              Playground
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-lg"
-                aria-label="Documentation"
-              >
-                <Book className="size-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={5}>
-              Documentation
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-lg"
-                aria-label="Settings"
-              >
-                <Settings2 className="size-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={5}>
-              Settings
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-lg"
-                aria-label="Users online"
-              >
-                {numOfUsers}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={5}>
-              Users Online
-            </TooltipContent>
-          </Tooltip>
-        </nav>
-        <nav className="mt-auto grid gap-1 p-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mt-auto rounded-lg"
-                aria-label="Help"
-              >
-                <LifeBuoy className="size-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={5}>
-              Help
-            </TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mt-auto rounded-lg"
-                aria-label="Account"
-              >
-                <SquareUser className="size-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={5}>
-              Account
-            </TooltipContent>
-          </Tooltip>
-        </nav>
-      </aside>
-      <div className="flex flex-col h-screen">
-        <header className="sticky top-0 z-10 flex h-[57px] items-center gap-1 border-b bg-background px-4">
-          <h1 className="text-xl font-semibold">Global Chat</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto gap-1.5 text-sm"
-          >
-            <Share className="size-3.5" />
-            Share
-          </Button>
-        </header>
-        <main className="flex-1 overflow-hidden p-4">
-          <div className="relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 lg:col-span-2">
-            <div className="flex-1 overflow-auto flex flex-col-reverse" >
-              {messages.map((data, index) => <p key={index}><span>{data.userId}: </span>{data.message}</p>)}
-            </div>
-            <form
-              className="relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring"
-              x-chunk="dashboard-03-chunk-1"
-              action={handleSendMessage}
-            >
-              <Label htmlFor="message" className="sr-only">
-                Message
-              </Label>
-              <Textarea
-                id="message"
-                placeholder="Type your message here..."
-                className="min-h-12 resize-none border-0 p-3 shadow-none focus-visible:ring-0 text-base"
-                value={userInput}
-                onChange={(event) => setUserInput(event.target.value)}
-              />
-              <div className="flex items-center p-3 pt-0">
-                <Button type="submit" size="sm" className="ml-auto gap-1.5">
-                  Send Message
-                  <CornerDownLeft className="size-3.5" />
+    <>
+      <div className="grid h-screen w-full pl-[56px]">
+        <aside className="inset-y fixed  left-0 z-20 flex h-full flex-col border-r">
+          <nav className="grid gap-1 p-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-lg bg-muted"
+                  aria-label="Playground"
+                >
+                  <SquareTerminal className="size-5" />
                 </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={5}>
+                Playground
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-lg"
+                  aria-label="Documentation"
+                >
+                  <Book className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={5}>
+                Documentation
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-lg"
+                  aria-label="Settings"
+                >
+                  <Settings2 className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={5}>
+                Settings
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-lg"
+                  aria-label="Users online"
+                >
+                  {numOfUsers}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={5}>
+                Users Online
+              </TooltipContent>
+            </Tooltip>
+          </nav>
+          <nav className="mt-auto grid gap-1 p-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="mt-auto rounded-lg"
+                  aria-label="Help"
+                >
+                  <LifeBuoy className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={5}>
+                Help
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="mt-auto rounded-lg"
+                  aria-label="Account"
+                >
+                  <SquareUser className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={5}>
+                Account
+              </TooltipContent>
+            </Tooltip>
+          </nav>
+        </aside>
+        <div className="flex flex-col h-screen">
+          <header className="sticky top-0 z-10 flex h-[57px] items-center gap-1 border-b bg-background px-4">
+            <h1 className="text-xl font-semibold">Global Chat</h1>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto gap-1.5 text-sm"
+            >
+              <Share className="size-3.5" />
+              Share
+            </Button>
+          </header>
+          <main className="flex-1 overflow-hidden p-4">
+            <div className="relative flex h-full min-h-[50vh] flex-col rounded-xl bg-muted/50 p-4 lg:col-span-2">
+              <div className="flex-1 overflow-auto flex flex-col-reverse" >
+                {messages.map((data, index) =>
+                  <p key={index} title={new Date(data.updatedAt!).toLocaleString()}>
+                    {`${data.userId}: ${data.message}`}
+                  </p>
+                )}
               </div>
-            </form>
-          </div>
-        </main>
-      </div>
-    </div>
+              <form
+                className="relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring"
+                x-chunk="dashboard-03-chunk-1"
+                action={handleSendMessage}
+              >
+                <Label htmlFor="message" className="sr-only">
+                  Message
+                </Label>
+                <Textarea
+                  ref={textAreaRef}
+                  id="message"
+                  placeholder="Type your message here..."
+                  className="min-h-12 resize-none border-0 p-3 shadow-none focus-visible:ring-0 text-base"
+                  value={userInput}
+                  onFocus={() => onInputFocus()}
+                  onBlur={() => onInputBlur()}
+                  onChange={(event) => setUserInput(event.target.value)}
+                />
+                <div className="flex items-center p-3 pt-0">
+                  <Button type="submit" size="sm" className="ml-auto gap-1.5">
+                    Send Message
+                    <CornerDownLeft className="size-3.5" />
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </main>
+        </div>
+      </div></>
   );
 }
