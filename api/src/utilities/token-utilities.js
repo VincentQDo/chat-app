@@ -46,6 +46,7 @@ export async function websocketVerifyToken(socket, next) {
                 await admin.auth().verifyIdToken(token);
             } catch (err) {
                 clearInterval(socket.tokenCheckInterval);
+                socket.emit('message', 'Token expired')
                 socket.disconnect(true);
             }
         }, checkInterval);

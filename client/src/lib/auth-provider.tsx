@@ -15,8 +15,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     const authStateObs = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // signed in
-        console.log('User logged in', user)
-        console.log('Local storage auth token: ', localStorage.getItem('authToken'))
+        console.log('Auth state changed, user info: ', user)
+        const newToken = await auth.currentUser?.getIdToken(true) ?? ''
+        console.log('Fetching another token: ', newToken)
+        localStorage.setItem('authToken', newToken)
         const authRes = await validateToken(localStorage.getItem('authToken'))
         console.log('validate token result: ', authRes)
         if (authRes.error === null) {
@@ -24,7 +26,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           setUser(authRes.user)
         } else {
           // Token expired or something went wrong while authenticating
-          console.log('Token expired')
+          console.log('Something went wrong while validating token')
           localStorage.removeItem('authToken')
           router.push('/signin')
         }
