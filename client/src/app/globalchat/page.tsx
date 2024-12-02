@@ -3,8 +3,8 @@ import {
   Book,
   CornerDownLeft,
   LifeBuoy,
+  LogOut,
   Settings2,
-  Share,
   SquareTerminal,
   SquareUser,
 } from "lucide-react"
@@ -22,6 +22,7 @@ import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
+import { logOut } from "@/lib/auth-provider";
 
 export default function GlobalChat() {
   const apiUrl = getBackendBaseUrl();
@@ -48,6 +49,11 @@ export default function GlobalChat() {
     } else {
       new Notification("New Message", { body: data.message?.message })
     }
+  }
+
+  const logout = () => {
+    console.log('logging out')
+    logOut()
   }
 
   useEffect(() => {
@@ -117,9 +123,10 @@ export default function GlobalChat() {
     // get messages
     const data = async () => {
       const headers = await fetchData('/globalmessages')
-      let messages = []
+      let messages: Message[] = []
       if (headers.status === 200) {
         messages = await headers.json()
+        messages.sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
       }
       setMessages(messages)
     }
@@ -247,9 +254,10 @@ export default function GlobalChat() {
               variant="outline"
               size="sm"
               className="ml-auto gap-1.5 text-sm"
+              onClick={() => logout()}
             >
-              <Share className="size-3.5" />
-              Share
+              <LogOut className="size-3.5" />
+              Logout
             </Button>
           </header>
           <main className="flex-1 overflow-hidden p-4">

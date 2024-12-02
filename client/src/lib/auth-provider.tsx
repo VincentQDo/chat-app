@@ -1,7 +1,7 @@
 'use client'
 
 import { auth, validateToken } from "@/services/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { createContext, useEffect, useState } from "react";
 
@@ -32,7 +32,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         }
       } else {
         // signed out
-        console.log('No user')
+        console.log('signed out')
         localStorage.removeItem('authToken')
         localStorage.removeItem('userName')
         router.push('/signin')
@@ -47,4 +47,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   return <AuthContext.Provider value={user}>
     {isLoading ? <p>Authenticating...</p> : children}
   </AuthContext.Provider>
+}
+
+export async function logOut() {
+  await signOut(auth)
+  localStorage.removeItem('authToken')
+  localStorage.removeItem('userName')
 }

@@ -1,8 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { AuthError, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile, User } from "firebase/auth";
-import { env } from "process";
-import { fetchData, getBackendBaseUrl } from "./backend-service";
+import { fetchData } from "./backend-service";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
