@@ -120,6 +120,11 @@ export default function GlobalChat() {
       console.error('Error from server: ', err)
     })
 
+    socket.current.on('disconnect', (reason) => {
+      console.error('Disconnected from server for the following reason: ', reason)
+      setMessages((prevMessages) => [{ message: 'Disconnected for the following reason: ' + reason, userId: 'System' }, ...prevMessages])
+    })
+
     // get messages
     const data = async () => {
       const headers = await fetchData('/globalmessages')
