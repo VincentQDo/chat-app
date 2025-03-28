@@ -120,8 +120,8 @@ io.on('connection', (socket) => {
 
   });
 
-  socket.on('disconnect', () => {
-    console.info('[INFO] User disconnected: ', socket.id);
+  socket.on('disconnect', (reason) => {
+    console.info('[INFO] User disconnected: ', socket.id, reason);
     socket.broadcast.emit('userDisconnected', { error: null, message: { users: connectedSockets.size } })
   });
 });
