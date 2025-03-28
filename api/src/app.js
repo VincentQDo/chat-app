@@ -18,16 +18,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.log('[INFO] Connected to database')
   }
 })
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(verifyToken);
 
 app.get('/authenticate', (req, res) => {
-  // Because the middle ware verify token already do token validation, if the code gets to here
-  // the user is already validated this is just a utility endpoint for the frontend to make sure user is authetnicated
-  // idk if i even need this lmao
-  res.send({ res: 'Success', err: null })
+  const userInfo = {
+    uid: req.user.uid,
+    email: req.user.email,
+    name: req.user.name,
+    emailVerified: req.user.email_verified
+  }
+  res.send({
+    authenticated: true,
+    userInfo: userInfo,
+    tokenExpiration: req.user.exp
+  })
 })
 
 app.get('/globalmessages', (req, res) => {
@@ -40,16 +48,6 @@ app.get('/globalmessages', (req, res) => {
       res.send(rows)
     }
   })
-})
-
-app.get('/friendlist', (req, res) => {
-  res.send([{ msg: 'Test', userId: 'userId' }])
-})
-
-app.put('/chats', (req, res) => {
-  // if userid === globalchat
-  // then it is not a private chat
-  res.send([{ msg: 'Test', userId: 'userId' }])
 })
 
 app.post('/message', (req, res) => {
