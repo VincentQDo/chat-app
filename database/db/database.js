@@ -21,8 +21,11 @@ db.serialize(() => {
 		CREATE TABLE IF NOT EXISTS users (
 			userId TEXT PRIMARY KEY,
 			userName TEXT
-		);
-
+		)
+	`, (err) => {
+		if (err) console.error('Failed to create users table', err.message)
+	})
+	db.run(`
 		CREATE TABLE IF NOT EXISTS messages (
 			messageid INTEGER PRIMARY KEY AUTOINCREMENT,
 			userId TEXT,
@@ -32,7 +35,11 @@ db.serialize(() => {
 			status TEXT DEFAULT 'pending',
 			chatId TEXT DEFAULT 'global',
 			FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
-		);
+		)
+	`, (err) => {
+		if (err) console.error('failed to create messages table', err.message)
+	})
+	db.run(`
 
 		CREATE TABLE IF NOT EXISTS relationships (
 			userid1 TEXT,
@@ -43,15 +50,14 @@ db.serialize(() => {
 			PRIMARY KEY (userid1, userid2),
 			FOREIGN KEY (userid1) REFERENCES users(userId) ON DELETE CASCADE,
 			FOREIGN KEY (userid2) REFERENCES users(userId) ON DELETE CASCADE
-		);
-
-		CREATE INDEX IF NOT EXISTS idx_userId ON messages(userId);
-	`,
+		)
+	`, (err) => {
+		if (err) console.error('failed to create messages table', err.message)
+	})
+	db.run('CREATE INDEX IF NOT EXISTS idx_userId ON messages(userId)',
 		(err) => {
-			if (err) console.error('Failed to create table', err.message)
-			else console.log('Created tables (or already exists)')
-		}
-	)
+			if (err) console.error('Failed to create index', err.message)
+		})
 })
 
 /** 
@@ -61,8 +67,8 @@ db.serialize(() => {
 export function addMessage(content) {
 	const { userId, message, status, chatId, createdAt, updatedAt } = content
 	const sql = `
-			INSERT INTO messages (userId, message, status, chatId, createdAt, updatedAt)
-			VALUES (?, ?, ?, ?, ?, ?)
+			INSERT INTO messages(userId, message, status, chatId, createdAt, updatedAt)
+	VALUES(?, ?, ?, ?, ?, ?)
 		`
 	return new Promise((resolve) => {
 		db.run(sql, [userId, message, status, chatId, createdAt, updatedAt], (err) => {
