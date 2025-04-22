@@ -13,6 +13,7 @@ const db = new sqlite.Database(path.resolve(__dirName, '../data.db'), (err) => {
 })
 
 db.serialize(() => {
+	console.log('Configuring Database')
 	db.run(`
 		CREATE TABLE IF NOT EXISTS users (
 			userId TEXT PRIMARY KEY,
@@ -46,7 +47,7 @@ db.serialize(() => {
 })
 
 /** 
- * @param {Message} message
+ * @param {Message} content
  * @returns {Promise<number>} 1 if success 0 if fail
  * */
 export function addMessage(content) {
@@ -68,7 +69,12 @@ export function addMessage(content) {
 	})
 }
 
-export function getAllMessages() {
+/** 
+ * @param {number} [limit] 
+ * @param {number} [offset]
+ * @returns {Promise<Message[]>}
+ * */
+export function getAllMessages(limit, offset) {
 	return new Promise((resolve, reject) => {
 		db.all('SELECT * FROM messages ORDER BY createdAt DESC LIMIT ? OFFSET ?',
 			[limit, offset],

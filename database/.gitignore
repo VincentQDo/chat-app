@@ -1,0 +1,13 @@
+*.db
+node_modules/
+
+logs/
+*.log
+npm-debug.log*
+
+.env
+
+.cache/
+dist/
+build
+coverage/
