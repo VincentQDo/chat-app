@@ -7,7 +7,10 @@ import { fileURLToPath } from "url"
 const __fileName = fileURLToPath(import.meta.url)
 const __dirName = path.dirname(__fileName)
 
-const db = new sqlite.Database(path.resolve(__dirName, '../data.db'), (err) => {
+const dbPath = path.join(__dirName, 'data.db')
+
+const db = new sqlite.Database(path.resolve(dbPath), (err) => {
+	console.log('Trying to access the database at ', dbPath)
 	if (err) console.error('DB connection error', err.message)
 	else console.log('DB connection established')
 })
@@ -43,7 +46,12 @@ db.serialize(() => {
 		);
 
 		CREATE INDEX IF NOT EXISTS idx_userId ON messages(userId);
-	`)
+	`,
+		(err) => {
+			if (err) console.error('Failed to create table', err.message)
+			else console.log('Created tables (or already exists)')
+		}
+	)
 })
 
 /** 
@@ -77,7 +85,7 @@ export function addMessage(content) {
 export function getAllMessages(limit, offset) {
 	return new Promise((resolve, reject) => {
 		db.all('SELECT * FROM messages ORDER BY createdAt DESC LIMIT ? OFFSET ?',
-			[limit, offset],
+			[limit ?? 100, offset ?? 0],
 			(err, rows) => {
 				if (err) {
 					console.error(err)
