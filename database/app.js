@@ -2,7 +2,7 @@ import express from 'express'
 import messageRouter from './routes/messages.js'
 
 const app = express()
-const PORT = process.env.PORT || 80
+const PORT = process.env.PORT || 8000
 
 app.use(express.json())
 

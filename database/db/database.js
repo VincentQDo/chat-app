@@ -65,21 +65,39 @@ db.serialize(() => {
  * @returns {Promise<number>} 1 if success 0 if fail
  * */
 export function addMessage(content) {
-	const { userId, message, status, chatId, createdAt, updatedAt } = content
+	let { userId, message, status, chatId } = content
+
+	if (!status) status = 'pending'
+	if (!chatId) chatId = 'global'
+	let [createdAt, updatedAt] = [Date.now(), Date.now()]
 	const sql = `
 			INSERT INTO messages(userId, message, status, chatId, createdAt, updatedAt)
 	VALUES(?, ?, ?, ?, ?, ?)
 		`
+	console.info('Inserting message into data base', { userId, message, status, chatId, createdAt, updatedAt })
 	return new Promise((resolve) => {
 		db.run(sql, [userId, message, status, chatId, createdAt, updatedAt], (err) => {
 			if (err) {
 				console.error(err)
 				resolve(0)
 			} else {
+				console.log('Message inserted')
 				resolve(1)
 			}
 		})
 
+	})
+}
+
+/**
+ * @param {string} messageId
+ * @returns {Promise<number>} 1 if success 0 if fail
+ * */
+export function deleteMessage(messageId) {
+	const sql = `DELETE FROM messages WHERE messageid = ?`
+	db.run(sql, [messageId], function(err) {
+		if (err) console.error(err.message)
+		else console.log(`Row deleted: ${this.changes}`)
 	})
 }
 
