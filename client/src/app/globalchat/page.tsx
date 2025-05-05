@@ -35,6 +35,8 @@ export default function GlobalChat() {
 
   const socket = useRef<Socket | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
 
   const sendNotification = (data: WebsocketServerResponse) => {
     setNumOfUnreadMessages((prev) => prev + 1)
@@ -83,6 +85,7 @@ export default function GlobalChat() {
   useEffect(() => {
     setUserName(localStorage.getItem('userName') ?? '')
     console.log('API URL: ', apiUrl)
+    console.log('User platform: ', navigator.userAgent)
     if (!apiUrl) {
       return;
     }
@@ -151,6 +154,10 @@ export default function GlobalChat() {
     setMessages([messageObject, ...messages])
     setUserInput('')
     socket.current?.emit('message', messageObject)
+  }
+
+  const isMobileDevice = () => {
+    return /Android|webOS|Iphone|iPad|iPod/i.test(navigator.userAgent)
   }
 
   return (
@@ -277,6 +284,7 @@ export default function GlobalChat() {
               <form
                 className="relative overflow-hidden rounded-lg border bg-background focus-within:ring-1 focus-within:ring-ring"
                 x-chunk="dashboard-03-chunk-1"
+                ref={formRef}
                 action={handleSendMessage}
               >
                 <Label htmlFor="message" className="sr-only">
@@ -291,6 +299,12 @@ export default function GlobalChat() {
                   onFocus={() => onInputFocus()}
                   onBlur={() => onInputBlur()}
                   onChange={(event) => setUserInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey && !isMobileDevice()) {
+                      event.preventDefault()
+                      formRef.current?.requestSubmit()
+                    }
+                  }}
                 />
                 <div className="flex items-center p-3 pt-0">
                   <Button type="submit" size="sm" className="ml-auto gap-1.5">
