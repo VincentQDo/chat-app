@@ -2,22 +2,11 @@ import express from 'express';
 import path from 'path';
 import http from 'http';
 import cors from 'cors';
-import sqlite3 from 'sqlite3';
 import { Server } from 'socket.io';
 import bodyParser from 'body-parser';
 import { verifyToken, websocketVerifyToken } from './utilities/token-utilities.js';
 
 // Create an Express application
-const __dirname = path.resolve()
-const dbPath = path.join(__dirname, 'database', 'chatlist.db')
-console.log('[INFO] Db path: ', dbPath)
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('[ERROR] ', err.message)
-  } else {
-    console.log('[INFO] Connected to database')
-  }
-})
 
 const app = express();
 app.use(cors());
@@ -38,32 +27,11 @@ app.get('/authenticate', (req, res) => {
   })
 })
 
-app.get('/globalmessages', (req, res) => {
-  console.log('[INFO] Getting global messages')
-  db.all("SELECT * FROM messages WHERE chatId = ?", ['global'], (err, rows) => {
-    if (err) {
-      console.error('[ERROR] Something went wrong while fetching global chats. ', err)
-    } else {
-      console.log('[INFO] Successfully fetched data: ', rows)
-      res.send(rows)
-    }
-  })
-})
-
-app.post('/message', (req, res) => {
-  const { message, userid, chatid } = req.body;
-  console.info('[INFO] Request body: ', { message, userid, chatid })
-  const currTime = Date.now();
-  const insertQuery = `INSERT INTO messages (userId, message, createdAt, updatedAt, chatId) VALUES (?, ?, ?, ?, ?)`
-  db.run(insertQuery, [userid, message, currTime, currTime, chatid || 'global'], (err) => {
-    if (err) {
-      console.error(err)
-      res.status(500).send('Error inserting data')
-    } else {
-      console.log('[INFO] Inserted data into table');
-      res.send({ userId: userid, message: message, createdAt: currTime, updatedAt: currTime, chatId: chatid })
-    }
-  })
+app.get('/globalmessages', async (req, res) => {
+  const response = await fetch('https://db.bitsrate.com/messages')
+  /** @type {Message[]} */
+  const messages = await response.json();
+  res.json(messages)
 })
 
 // Define a simple route for HTTP
@@ -89,33 +57,30 @@ io.on('connection', (socket) => {
   console.info(`[INFO] Number of connected users: `, connectedSockets.size);
   socket.broadcast.emit('userConnected', { error: null, message: { users: connectedSockets.size } })
   socket.emit('userConnected', { error: null, message: { users: connectedSockets.size } })
-  socket.on('message', (data) => {
+  socket.on('message', async (data) => {
     console.info(`[INFO] Socket ${socket.id} sent: `, data)
     const currTime = Date.now();
     const { userId, message, chatId } = data;
-    const insertQuery = `INSERT INTO messages (userId, message, createdAt, updatedAt, chatId, status) VALUES (?, ?, ?, ?, ?, ?)`
-    db.run(insertQuery, [userId || 'Annonymous', message, currTime, currTime, chatId || 'global', 'sent'], (err) => {
-      if (err) {
-        console.error(err)
-        socket.emit('error', { error: 'Something went wrong while sending message', message: null })
-      } else {
-        console.info('[INFO] Inserted data into table');
-        socket.broadcast.emit('message',
-          {
-            error: null,
-            message: {
-              message,
-              createdAt: currTime,
-              updatedAt: currTime,
-              userId,
-              status: 'sent',
-              chatId
-            }
-          }
-        )
-      }
+    /** @type {Message} */
+    const jsonBody = {
+      message: message,
+      userId: userId,
+      chatId: chatId,
+      createdAt: currTime,
+      updatedAt: currTime,
+      status: 'sent'
+    }
+    console.info('[INFO] Sending message to database: ', jsonBody)
+    const response = await fetch('https://db.bitsrate.com/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(jsonBody)
     })
-
+    console.debug('[DEBUG] Response received: ', response)
+    if (response.ok) {
+      jsonBody.status = 'sent'
+      socket.broadcast.emit('message', jsonBody)
+    }
   });
 
   socket.on('disconnect', (reason) => {
