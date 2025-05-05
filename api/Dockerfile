@@ -15,6 +15,4 @@ COPY . .
 
 WORKDIR /app/src
 
-RUN node ./database/database.js
-
 CMD [ "node", "app.js" ]
