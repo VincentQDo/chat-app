@@ -78,7 +78,9 @@ io.on('connection', (socket) => {
     console.debug('[DEBUG] Response received: ', response)
     if (response.ok) {
       jsonBody.status = 'sent'
-      socket.broadcast.emit('message', jsonBody)
+      const jsonData = { error: null, message: jsonBody }
+      console.info('[INFO] Broadcasting message: ', jsonData)
+      socket.broadcast.emit('message', jsonData)
     }
   });
 

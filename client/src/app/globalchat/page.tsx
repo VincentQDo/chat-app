@@ -150,6 +150,7 @@ export default function GlobalChat() {
     const messageObject: Message = {
       userId: userName,
       message: userInput,
+      createdAt: Date.now()
     }
     setMessages([messageObject, ...messages])
     setUserInput('')
@@ -277,7 +278,7 @@ export default function GlobalChat() {
               <div className="flex-1 overflow-auto flex flex-col-reverse" >
                 {messages.map((data, index) =>
                   <p key={index} title={new Date(data.updatedAt!).toLocaleString()}>
-                    {`${data.userId}: ${data.message}`}
+                    <span className="w-8 text-slate-400">{`${data.createdAt ? new Date(data.createdAt).toLocaleString() : ''}`}</span>{` ${data.userId}: ${data.message}`}
                   </p>
                 )}
               </div>
