@@ -2,12 +2,8 @@
 
 import sqlite from "sqlite3"
 import path from "path"
-import { fileURLToPath } from "url"
 
-const __fileName = fileURLToPath(import.meta.url)
-const __dirName = path.dirname(__fileName)
-
-const dbPath = path.join(__dirName, 'data.db')
+const dbPath = path.join('/data', 'data.db')
 
 const db = new sqlite.Database(path.resolve(dbPath), (err) => {
 	console.log('Trying to access the database at ', dbPath)
