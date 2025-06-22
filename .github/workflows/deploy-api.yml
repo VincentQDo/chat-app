@@ -1,0 +1,27 @@
+name: Deploy on Fly.io
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "api/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install fly CLI
+        run: curl -L https://fly.io/install.sh | sh
+
+      - name: Deploy
+        env:
+          FLYCTL_INSTALL: "/home/runner/.fly"
+          PATH: "/home/runner/.fly/bin:$PATH"
+          FLY_TOKEN: ${{ secrets.FLY_TOKEN }}
+        run: cd ./api && flyctl deploy -t "$FLY_TOKEN"
