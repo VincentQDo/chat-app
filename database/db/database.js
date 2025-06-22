@@ -1,7 +1,7 @@
 /** @typedef (import('../types/message.d.js').Message) Message*/
 
 import sqlite from "sqlite3"
-import path from "path"
+import path, { resolve } from "path"
 
 const dbPath = path.join('/data', 'data.db')
 
@@ -91,9 +91,17 @@ export function addMessage(content) {
  * */
 export function deleteMessage(messageId) {
 	const sql = `DELETE FROM messages WHERE messageid = ?`
-	db.run(sql, [messageId], function(err) {
-		if (err) console.error(err.message)
-		else console.log(`Row deleted: ${this.changes}`)
+	return new Promise((resolve, reject) => {
+		db.run(sql, [messageId], function(err) {
+			if (err) {
+				console.error(err.message)
+				reject(0)
+			}
+			else {
+				console.log(`Row deleted: ${this.changes}`)
+				resolve(1)
+			}
+		})
 	})
 }
 
