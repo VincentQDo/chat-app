@@ -13,17 +13,16 @@ app.use(bodyParser.json());
 app.use(verifyToken);
 
 app.get('/authenticate', (req, res) => {
-	console.log(req)
 	const userInfo = {
-		uid: req.user.uid,
-		email: req.user.email,
-		name: req.user.name,
-		emailVerified: req.user.email_verified
+		uid: req.body.user.uid,
+		email: req.body.user.email,
+		name: req.body.user.name,
+		emailVerified: req.body.user.email_verified
 	}
 	res.send({
 		authenticated: true,
 		userInfo: userInfo,
-		tokenExpiration: req.user.exp
+		tokenExpiration: req.body.user.exp
 	})
 })
 
