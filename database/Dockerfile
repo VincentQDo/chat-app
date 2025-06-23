@@ -13,6 +13,4 @@ RUN npm ci --omit=dev
 
 COPY . .
 
-WORKDIR /app/src
-
 CMD [ "node", "app.js" ]
