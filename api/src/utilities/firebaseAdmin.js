@@ -4,8 +4,11 @@ import admin from 'firebase-admin';
 console.log('[DEBUG] Node environment ', process.env.NODE_ENV)
 let serviceAccount
 if (process.env.NODE_ENV === 'development') {
+	const fileDir = '/workspace/service-account.json'
 	const fs = await import('fs/promises')
-	const file = await fs.readFile(new URL('/workspace/service-account.json', import.meta.url), 'utf8')
+	const file = await fs.readFile(new URL(fileDir, import.meta.url), 'utf8')
+	console.log('Reading file from:', fileDir)
+	console.log('File content:', file)
 	serviceAccount = JSON.parse(file)
 	console.log('[INFO] service account file: ', serviceAccount)
 } else {
