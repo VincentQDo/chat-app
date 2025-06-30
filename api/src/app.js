@@ -30,7 +30,9 @@ app.get('/globalmessages', async (req, res) => {
 	const response = await fetch('https://db.bitsrate.com/messages')
 	/** @type {Message[]} */
 	const messages = await response.json();
-	res.json(messages)
+	messages.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1)
+	const result = messages.slice(-20)
+	res.json(result)
 })
 
 // Define a simple route for HTTP
