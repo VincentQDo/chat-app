@@ -138,7 +138,7 @@ export function deleteMessage(messageId) {
  * @returns {Promise<Message[]>} Promise of messages object array
  * */
 export function getAllMessages(limit, offset) {
-  let lim = Number.isSafeInteger(limit) ? Number(limit) : 1;
+  let lim = Number.isSafeInteger(limit) ? Number(limit) : 100;
   lim = Math.min(lim, 200);
   const off = Number.isSafeInteger(offset) ? offset : 0;
   console.log(
