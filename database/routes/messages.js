@@ -5,16 +5,9 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   console.log("[INFO] Getting all messages");
-  const data = await getAllMessages();
+  const { limit, offset } = req.query;
+  const data = await getAllMessages(limit, offset);
   res.json(data);
-});
-
-router.get("/messages", async (req, res) => {
-  console.log("[INFO] Getting messages from ${index} to ${index2}");
-  console.log("Path of request: ", req.path);
-  console.log("Params of request: ", req.params);
-  // const {index1, index2} = req.body
-  // const data = await getMessages(index1, index2)
 });
 
 router.post("/", async (req, res) => {

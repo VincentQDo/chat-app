@@ -1,12 +1,16 @@
 /** @typedef (import('../types/message.d.js').Message) Message*/
 
+import fs from "fs";
 import sqlite from "sqlite3";
-import path, { resolve } from "path";
+import path from "path";
 
-const dbPath = path.join("/data", "data.db");
+const DATA_DIR = process.env.DB_DIR || path.resolve(process.cwd(), "data");
+const DB_FILE = path.join(DATA_DIR, "data.db");
 
-const db = new sqlite.Database(path.resolve(dbPath), (err) => {
-  console.log("Trying to access the database at ", dbPath);
+fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const db = new sqlite.Database(DB_FILE, (err) => {
+  console.log("Trying to access the database at ", DB_FILE);
   if (err) console.error("DB connection error", err.message);
   else console.log("DB connection established");
 });
@@ -129,20 +133,29 @@ export function deleteMessage(messageId) {
 }
 
 /**
- * @param {number} [limit] Default to 100 if not provided
- * @param {number} [offset] Default to 0 if not provided
+ * @param {any} [limit] Default to 100 if not provided
+ * @param {any} [offset] Default to 0 if not provided
  * @returns {Promise<Message[]>} Promise of messages object array
  * */
 export function getAllMessages(limit, offset) {
+  let lim = Number.isSafeInteger(limit) ? Number(limit) : 1;
+  lim = Math.min(lim, 200);
+  const off = Number.isSafeInteger(offset) ? offset : 0;
+  console.log(
+    "Fetching messages with the following limit and offset: ",
+    lim,
+    off,
+  );
   return new Promise((resolve, reject) => {
     db.all(
       "SELECT * FROM messages ORDER BY createdAt DESC LIMIT ? OFFSET ?",
-      [limit ?? 100, offset ?? 0],
+      [lim, off],
       (err, rows) => {
         if (err) {
           console.error(err);
           reject(err);
         } else {
+          console.log("Fetch result: ", rows);
           resolve(rows);
         }
       },
