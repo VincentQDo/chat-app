@@ -1,6 +1,6 @@
 #!/bin/bash
 
-tmux split-window -h "export NODE_ENV=development && cd api && npm run dev"
+tmux split-window -h "export NODE_ENV=development && export DB_URL=http://localhost:8000 && cd api && npm run dev"
 tmux split-window -h "cd client && npm run dev"
 tmux select-pane -t 0
 tmux select-layout even-horizontal
