@@ -43,7 +43,6 @@ db.serialize(() => {
   );
   db.run(
     `
-
 		CREATE TABLE IF NOT EXISTS relationships (
 			userid1 TEXT,
 			userid2 TEXT,
@@ -56,12 +55,19 @@ db.serialize(() => {
 		)
 	`,
     (err) => {
-      if (err) console.error("failed to create messages table", err.message);
+      if (err)
+        console.error("failed to create relationships table", err.message);
     },
   );
   db.run("CREATE INDEX IF NOT EXISTS idx_userId ON messages(userId)", (err) => {
     if (err) console.error("Failed to create index", err.message);
   });
+  db.run(
+    "CREATE INDEX IF NOT EXISTS idx_createdAt ON messages(createdAt)",
+    (err) => {
+      if (err) console.error("Failed to create createdAt index", err.message);
+    },
+  );
 });
 
 /**
@@ -75,10 +81,10 @@ export function addMessage(content) {
   if (!chatId) chatId = "global";
   let [createdAt, updatedAt] = [Date.now(), Date.now()];
   const sql = `
-			INSERT INTO messages(userId, message, status, chatId, createdAt, updatedAt)
-	VALUES(?, ?, ?, ?, ?, ?)
-		`;
-  console.info("Inserting message into data base", {
+		INSERT INTO messages(userId, message, status, chatId, createdAt, updatedAt)
+		VALUES(?, ?, ?, ?, ?, ?)
+	`;
+  console.info("Inserting message into database", {
     userId,
     message,
     status,
@@ -104,7 +110,7 @@ export function addMessage(content) {
 }
 
 /**
- * @param {string} messageId
+ * @param {string|number} messageId
  * @returns {Promise<number>} 1 if success 0 if fail
  * */
 export function deleteMessage(messageId) {
@@ -123,15 +129,103 @@ export function deleteMessage(messageId) {
 }
 
 /**
- * @param {number} [limit]
- * @param {number} [offset]
- * @returns {Promise<Message[]>}
+ * @param {number} [limit] Default to 100 if not provided
+ * @param {number} [offset] Default to 0 if not provided
+ * @returns {Promise<Message[]>} Promise of messages object array
  * */
 export function getAllMessages(limit, offset) {
   return new Promise((resolve, reject) => {
     db.all(
       "SELECT * FROM messages ORDER BY createdAt DESC LIMIT ? OFFSET ?",
       [limit ?? 100, offset ?? 0],
+      (err, rows) => {
+        if (err) {
+          console.error(err);
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      },
+    );
+  });
+}
+
+/**
+ * @param {number} [messageId]
+ * @returns {Promise<Message|null>}
+ */
+export function getMessageById(messageId) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT * FROM messages WHERE messageid = ?",
+      [messageId],
+      (err, row) => {
+        if (err) {
+          console.error(err);
+          reject(err);
+        } else {
+          resolve(row ?? null);
+        }
+      },
+    );
+  });
+}
+
+/**
+ * Cursor pagination: rows with messageid > startId
+ * @param {string|number} startId
+ * @param {number} [limit]
+ * @returns {Promise<Message[]>}
+ */
+export function getMessagesAfterId(startId, limit) {
+  const start = Number(startId) || 0;
+  let lim = Number.isSafeInteger(limit) ? limit : 1;
+  lim = Math.min(lim, 200);
+  return new Promise((resolve, reject) => {
+    db.all(
+      "SELECT * FROM messages WHERE messageid > ? ORDER BY messageid ASC LIMIT ?",
+      [start, lim],
+      (err, rows) => {
+        if (err) {
+          console.error(err);
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      },
+    );
+  });
+}
+
+/** LIKE escape to avoid treating % and _ as wildcards unintentionally */
+/**
+ * @param {string} s
+ * @returns {string}
+ */
+function escapeLike(s) {
+  return s.replace(/[%_]/g, (m) => "\\" + m);
+}
+
+/**
+ * Case-insensitive contains search on message text.
+ * @param {string} q query string
+ * @param {number} [limit] Row limit
+ * @param {number} [offset] Row offset
+ * @returns {Promise<Message[]>}
+ */
+export function searchMessages(q, limit, offset) {
+  let lim = Number.isSafeInteger(limit) ? limit : 1;
+  lim = Math.min(lim, 200);
+  const off = Number.isSafeInteger(offset) ? offset : 0;
+  const like = "%" + escapeLike(q) + "%";
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT * FROM messages
+			 WHERE message LIKE ? ESCAPE '\\'
+			 COLLATE NOCASE
+			 ORDER BY createdAt DESC
+			 LIMIT ? OFFSET ?`,
+      [like, lim, off],
       (err, rows) => {
         if (err) {
           console.error(err);
