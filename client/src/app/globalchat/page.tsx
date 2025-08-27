@@ -1,23 +1,9 @@
 "use client";
-import {
-  Book,
-  CornerDownLeft,
-  LifeBuoy,
-  LogOut,
-  Settings2,
-  SquareTerminal,
-  SquareUser,
-  Plus,
-} from "lucide-react"
+import { CornerDownLeft, LogOut, SquareUser, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 
 import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState, FormEvent } from 'react';
@@ -43,6 +29,22 @@ export default function GlobalChat() {
   const socket = useRef<Socket | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+
+  const addRoom = (name: string) => {
+    const id = `room:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
+    if (rooms.find(r => r.id === id)) return false;
+    setRooms(prev => [...prev, { id, name: name.trim(), type: 'room' }]);
+    setSelectedRoom(id);
+    return true;
+  }
+
+  const addDm = (username: string) => {
+    const id = `dm:${username.trim().toLowerCase()}`;
+    if (rooms.find(r => r.id === id)) return false;
+    setRooms(prev => [...prev, { id, name: username.trim(), type: 'dm' }]);
+    setSelectedRoom(id);
+    return true;
+  }
 
   const sendNotification = (data: WebsocketServerResponse) => {
     setNumOfUnreadMessages((prev) => prev + 1)
@@ -154,15 +156,17 @@ export default function GlobalChat() {
 
   const handleSendMessage = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
+    if (!userInput.trim()) return;
     const messageObject: Message = {
       userId: userName,
       message: userInput,
       createdAt: Date.now(),
-      roomId: (undefined as any)
-    }
-    setMessages([messageObject, ...messages])
-    setUserInput('')
-    socket.current?.emit('message', messageObject)
+      roomId: selectedRoom,
+    } as Message & { roomId?: string };
+    setMessages([messageObject, ...messages]);
+    setUserInput('');
+    // optimistic emit; backend will be wired later
+    socket.current?.emit('message', messageObject);
   }
 
   const isMobileDevice = () => {
@@ -274,16 +278,15 @@ export default function GlobalChat() {
                     className="w-full mt-1 px-3 py-2 border rounded-lg bg-muted"
                     value={newRoomName}
                     onChange={e => setNewRoomName(e.target.value)}
+                    autoFocus
                     placeholder="e.g. Project X"
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (addRoom(newRoomName)) { setShowRoomModal(false); setNewRoomName(''); } else alert('Room exists'); } }}
                   />
                   <Button className="mt-2 w-full" onClick={() => {
-                    if (newRoomName.trim()) {
-                      const id = `room:${newRoomName.trim().toLowerCase().replace(/\s+/g, '-')}`;
-                      setRooms(prev => [...prev, { id, name: newRoomName.trim(), type: 'room' }]);
-                      setSelectedRoom(id);
-                      setShowRoomModal(false);
-                      setNewRoomName('');
-                    }
+                    if (!newRoomName.trim()) return;
+                    if (!addRoom(newRoomName)) { alert('Room exists'); return; }
+                    setShowRoomModal(false);
+                    setNewRoomName('');
                   }}>
                     Create Channel
                   </Button>
@@ -298,15 +301,14 @@ export default function GlobalChat() {
                     value={newDmName}
                     onChange={e => setNewDmName(e.target.value)}
                     placeholder="e.g. alice"
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (addDm(newDmName)) { setShowRoomModal(false); setNewDmName(''); } else alert('Chat exists'); } }}
                   />
                   <Button className="mt-2 w-full" onClick={() => {
-                    if (newDmName.trim()) {
-                      const id = `dm:${newDmName.trim().toLowerCase()}`;
-                      setRooms(prev => [...prev, { id, name: newDmName.trim(), type: 'dm' }]);
-                      setSelectedRoom(id);
-                      setShowRoomModal(false);
-                      setNewDmName('');
-                    }
+                    if (!newDmName.trim()) return;
+                    if (!addDm(newDmName)) { alert('Chat exists'); return; }
+                    setShowRoomModal(false);
+                    setNewDmName('');
                   }}>
                     Start Chat
                   </Button>
