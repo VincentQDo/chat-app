@@ -5,6 +5,7 @@ export interface Message {
   updatedAt?: number;
   status?: 'pending' | 'sent' | 'read' | null;
   chatId?: string;
+  roomId?: string;
 }
 
 export interface User {
