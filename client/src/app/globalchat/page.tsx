@@ -7,6 +7,7 @@ import {
   Settings2,
   SquareTerminal,
   SquareUser,
+  Plus,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -36,7 +37,6 @@ export default function GlobalChat() {
   const socket = useRef<Socket | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
-
 
   const sendNotification = (data: WebsocketServerResponse) => {
     setNumOfUnreadMessages((prev) => prev + 1)
@@ -163,102 +163,35 @@ export default function GlobalChat() {
 
   return (
     <>
-      <div className="grid h-screen w-full pl-[56px]">
-        <aside className="inset-y fixed  left-0 z-20 flex h-full flex-col border-r">
-          <nav className="grid gap-1 p-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-lg bg-muted"
-                  aria-label="Playground"
-                >
-                  <SquareTerminal className="size-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={5}>
-                Playground
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-lg"
-                  aria-label="Documentation"
-                >
-                  <Book className="size-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={5}>
-                Documentation
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-lg"
-                  aria-label="Settings"
-                >
-                  <Settings2 className="size-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={5}>
-                Settings
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-lg"
-                  aria-label="Users online"
-                >
-                  {numOfUsers}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={5}>
-                Users Online
-              </TooltipContent>
-            </Tooltip>
-          </nav>
-          <nav className="mt-auto grid gap-1 p-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="mt-auto rounded-lg"
-                  aria-label="Help"
-                >
-                  <LifeBuoy className="size-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={5}>
-                Help
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="mt-auto rounded-lg"
-                  aria-label="Account"
-                >
-                  <SquareUser className="size-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={5}>
-                Account
-              </TooltipContent>
-            </Tooltip>
-          </nav>
+      <div className="grid h-screen w-full pl-64">
+        <aside className="fixed left-0 top-0 bottom-0 w-64 z-20 flex flex-col border-r bg-white/80 dark:bg-slate-900/80">
+          <div className="flex items-center justify-between px-4 py-4 border-b">
+            <h2 className="text-lg tracking-tight">Chats</h2>
+            <Button size="icon" variant="ghost" onClick={() => { }} aria-label="Add chat">
+              <Plus className="size-5" />
+            </Button>
+          </div>
+          <div className="p-4 overflow-y-auto flex-1">
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Rooms</h3>
+              <div className="space-y-1">
+                <Button variant="ghost" className="w-full justify-start">Global Chat</Button>
+              </div>
+            </div>
+            <div className="mt-6">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Direct Messages</h3>
+              <div className="space-y-1">
+                <Button variant="ghost" className="w-full justify-start">Alice</Button>
+                <Button variant="ghost" className="w-full justify-start">Bob</Button>
+              </div>
+            </div>
+          </div>
+          <div className="px-4 py-3 border-t flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><SquareUser className="size-4" /> {numOfUsers} online</span>
+            <Button variant="ghost" size="icon" className="ml-auto" onClick={() => logout()} aria-label="Logout">
+              <LogOut className="size-4" />
+            </Button>
+          </div>
         </aside>
         <div className="flex flex-col h-screen">
           <header className="sticky top-0 z-10 flex h-[57px] items-center gap-1 border-b bg-background px-4">
