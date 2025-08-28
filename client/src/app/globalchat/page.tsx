@@ -22,9 +22,8 @@ export default function GlobalChat() {
   const [rooms, setRooms] = useState([{ id: 'global', name: 'Global Chat', type: 'room' }]);
   const [selectedRoom, setSelectedRoom] = useState('global');
   const [showRoomModal, setShowRoomModal] = useState(false);
-  const [modalMode, setModalMode] = useState<'room' | 'dm' | 'both'>('both');
-  const [newRoomName, setNewRoomName] = useState('');
-  const [newDmName, setNewDmName] = useState('');
+  const [modalMode, setModalMode] = useState<'room' | 'dm'>('room');
+  const [newName, setNewName] = useState('');
 
   const socket = useRef<Socket | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -270,96 +269,39 @@ export default function GlobalChat() {
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 w-full max-w-md">
             <h2 className="text-lg font-bold mb-4">{modalMode === 'dm' ? 'Start New DM' : 'Create Channel'}</h2>
             <div className="space-y-4">
-              {modalMode === 'room' && (
-                <div>
-                  <Label htmlFor="roomName">Room Name</Label>
-                  <input
-                    id="roomName"
-                    className="w-full mt-1 px-3 py-2 border rounded-lg bg-muted"
-                    value={newRoomName}
-                    onChange={e => setNewRoomName(e.target.value)}
-                    autoFocus
-                    placeholder="e.g. Project X"
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (addRoom(newRoomName)) { setShowRoomModal(false); setNewRoomName(''); } else alert('Room exists'); } }}
-                  />
-                  <Button className="mt-2 w-full" onClick={() => {
-                    if (!newRoomName.trim()) return;
-                    if (!addRoom(newRoomName)) { alert('Room exists'); return; }
-                    setShowRoomModal(false);
-                    setNewRoomName('');
-                  }}>
-                    Create Channel
-                  </Button>
-                </div>
-              )}
-              {modalMode === 'dm' && (
-                <div>
-                  <Label htmlFor="dmName">Username</Label>
-                  <input
-                    id="dmName"
-                    className="w-full mt-1 px-3 py-2 border rounded-lg bg-muted"
-                    value={newDmName}
-                    onChange={e => setNewDmName(e.target.value)}
-                    placeholder="e.g. alice"
-                    autoFocus
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (addDm(newDmName)) { setShowRoomModal(false); setNewDmName(''); } else alert('Chat exists'); } }}
-                  />
-                  <Button className="mt-2 w-full" onClick={() => {
-                    if (!newDmName.trim()) return;
-                    if (!addDm(newDmName)) { alert('Chat exists'); return; }
-                    setShowRoomModal(false);
-                    setNewDmName('');
-                  }}>
-                    Start Chat
-                  </Button>
-                </div>
-              )}
-              {modalMode === 'both' && (
-                <>
-                  <div>
-                    <Label htmlFor="roomName">Room Name</Label>
-                    <input
-                      id="roomName"
-                      className="w-full mt-1 px-3 py-2 border rounded-lg bg-muted"
-                      value={newRoomName}
-                      onChange={e => setNewRoomName(e.target.value)}
-                      placeholder="e.g. Project X"
-                    />
-                    <Button className="mt-2 w-full" onClick={() => {
-                      if (newRoomName.trim()) {
-                        const id = `room:${newRoomName.trim().toLowerCase().replace(/\s+/g, '-')}`;
-                        setRooms(prev => [...prev, { id, name: newRoomName.trim(), type: 'room' }]);
-                        setSelectedRoom(id);
-                        setShowRoomModal(false);
-                        setNewRoomName('');
+              <div>
+                <Label htmlFor="itemName">{modalMode === 'room' ? 'Room Name' : 'Username'}</Label>
+                <input
+                  id="itemName"
+                  className="w-full mt-1 px-3 py-2 border rounded-lg bg-muted"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  autoFocus
+                  placeholder={modalMode === 'room' ? 'e.g. Project X' : 'e.g. alice'}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (modalMode === 'room') {
+                        if (addRoom(newName)) { setShowRoomModal(false); setNewName(''); } else alert('Room exists');
+                      } else {
+                        if (addDm(newName)) { setShowRoomModal(false); setNewName(''); } else alert('Chat exists');
                       }
-                    }}>
-                      Add Room
-                    </Button>
-                  </div>
-                  <div className="border-t pt-4">
-                    <Label htmlFor="dmName">1-on-1 Username</Label>
-                    <input
-                      id="dmName"
-                      className="w-full mt-1 px-3 py-2 border rounded-lg bg-muted"
-                      value={newDmName}
-                      onChange={e => setNewDmName(e.target.value)}
-                      placeholder="e.g. alice"
-                    />
-                    <Button className="mt-2 w-full" onClick={() => {
-                      if (newDmName.trim()) {
-                        const id = `dm:${newDmName.trim().toLowerCase()}`;
-                        setRooms(prev => [...prev, { id, name: newDmName.trim(), type: 'dm' }]);
-                        setSelectedRoom(id);
-                        setShowRoomModal(false);
-                        setNewDmName('');
-                      }
-                    }}>
-                      Add 1-on-1
-                    </Button>
-                  </div>
-                </>
-              )}
+                    }
+                  }}
+                />
+                <Button className="mt-2 w-full" onClick={() => {
+                  if (!newName.trim()) return;
+                  if (modalMode === 'room') {
+                    if (!addRoom(newName)) { alert('Room exists'); return; }
+                  } else {
+                    if (!addDm(newName)) { alert('Chat exists'); return; }
+                  }
+                  setShowRoomModal(false);
+                  setNewName('');
+                }}>
+                  {modalMode === 'room' ? 'Create Channel' : 'Start Chat'}
+                </Button>
+              </div>
               <Button variant="ghost" className="w-full mt-4" onClick={() => setShowRoomModal(false)}>
                 Cancel
               </Button>
