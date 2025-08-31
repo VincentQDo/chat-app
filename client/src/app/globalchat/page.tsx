@@ -219,26 +219,17 @@ export default function GlobalChat() {
   return (
     <>
       <div className="grid h-screen w-full md:pl-64">
-        {/* Desktop sidebar */}
-        <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 z-20 flex flex-col border-r bg-white/80 dark:bg-slate-900/80">
-          {sidebarContent}
-        </aside>
-
-        {/* Mobile slide-over sidebar */}
+        {/* Backdrop for mobile when sidebar is open */}
         {isSidebarOpen && (
-          <div className="fixed inset-0 z-40 md:hidden">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setIsSidebarOpen(false)} />
-            <div className="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-slate-900 shadow-lg flex flex-col">
-              <div className="flex items-center justify-between px-4 py-4 border-b">
-                <h2 className="text-lg tracking-tight">Chats</h2>
-                <Button size="icon" variant="ghost" onClick={() => setIsSidebarOpen(false)} aria-label="Close menu">
-                  <X className="size-4" />
-                </Button>
-              </div>
-              {sidebarContent}
-            </div>
+          <div className="fixed inset-0 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}>
+            <div className="absolute inset-0 bg-black/40" />
           </div>
         )}
+
+        {/* Single responsive sidebar: visible on desktop, toggled on mobile */}
+        <aside className={`fixed left-0 top-0 bottom-0 w-64 z-40 flex flex-col border-r bg-white dark:bg-slate-900 transform transition-transform duration-200 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+          {sidebarContent}
+        </aside>
 
         <div className="flex flex-col h-screen">
           <header className="sticky top-0 z-10 flex py-4 items-center gap-1 border-b bg-background px-4">
