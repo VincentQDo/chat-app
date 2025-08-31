@@ -1,5 +1,5 @@
 "use client";
-import { CornerDownLeft, LogOut, SquareUser, Plus } from "lucide-react"
+import { CornerDownLeft, LogOut, SquareUser, Plus, Menu, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -24,6 +24,7 @@ export default function GlobalChat() {
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [modalMode, setModalMode] = useState<'room' | 'dm'>('room');
   const [newName, setNewName] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const socket = useRef<Socket | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -172,50 +173,78 @@ export default function GlobalChat() {
     return /Android|webOS|Iphone|iPad|iPod/i.test(navigator.userAgent)
   }
 
-  return (
+  // Sidebar content reused for desktop and mobile
+  const sidebarContent = (
     <>
-      <div className="grid h-screen w-full pl-64">
-        <aside className="fixed left-0 top-0 bottom-0 w-64 z-20 flex flex-col border-r bg-white/80 dark:bg-slate-900/80">
-          <div className="flex items-center justify-between px-4 py-4 border-b">
-            <h2 className="text-lg tracking-tight">Chats</h2>
-          </div>
-          <div className="p-4 overflow-y-auto flex-1">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase">Rooms</h3>
-                <Button size="icon" variant="ghost" onClick={() => { setModalMode('room'); setShowRoomModal(true); }} aria-label="Add room">
-                  <Plus className="size-4" />
-                </Button>
-              </div>
-              <div className="space-y-1">
-                {rooms.filter(r => r.type === 'room').map(r => (
-                  <Button key={r.id} variant={selectedRoom === r.id ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => setSelectedRoom(r.id)}>{r.name}</Button>
-                ))}
-              </div>
-            </div>
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase">Direct Messages</h3>
-                <Button size="icon" variant="ghost" onClick={() => { setModalMode('dm'); setShowRoomModal(true); }} aria-label="Add direct message">
-                  <Plus className="size-4" />
-                </Button>
-              </div>
-              <div className="space-y-1">
-                {rooms.filter(r => r.type === 'dm').map(r => (
-                  <Button key={r.id} variant={selectedRoom === r.id ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => setSelectedRoom(r.id)}>{r.name}</Button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="px-4 py-3 border-t flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><SquareUser className="size-4" /> {numOfUsers} online</span>
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={() => logout()} aria-label="Logout">
-              <LogOut className="size-4" />
+      <div className="flex items-center justify-between px-4 py-4 border-b">
+        <h2 className="text-lg tracking-tight">Chats</h2>
+      </div>
+      <div className="p-4 overflow-y-auto flex-1">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase">Rooms</h3>
+            <Button size="icon" variant="ghost" onClick={() => { setModalMode('room'); setShowRoomModal(true); }} aria-label="Add room">
+              <Plus className="size-4" />
             </Button>
           </div>
+          <div className="space-y-1">
+            {rooms.filter(r => r.type === 'room').map(r => (
+              <Button key={r.id} variant={selectedRoom === r.id ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => { setSelectedRoom(r.id); setIsSidebarOpen(false); }}>{r.name}</Button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase">Direct Messages</h3>
+            <Button size="icon" variant="ghost" onClick={() => { setModalMode('dm'); setShowRoomModal(true); }} aria-label="Add direct message">
+              <Plus className="size-4" />
+            </Button>
+          </div>
+          <div className="space-y-1">
+            {rooms.filter(r => r.type === 'dm').map(r => (
+              <Button key={r.id} variant={selectedRoom === r.id ? 'secondary' : 'ghost'} className="w-full justify-start" onClick={() => { setSelectedRoom(r.id); setIsSidebarOpen(false); }}>{r.name}</Button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="px-4 py-3 border-t flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1"><SquareUser className="size-4" /> {numOfUsers} online</span>
+        <Button variant="ghost" size="icon" className="ml-auto" onClick={() => logout()} aria-label="Logout">
+          <LogOut className="size-4" />
+        </Button>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <div className="grid h-screen w-full md:pl-64">
+        {/* Desktop sidebar */}
+        <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 z-20 flex flex-col border-r bg-white/80 dark:bg-slate-900/80">
+          {sidebarContent}
         </aside>
+
+        {/* Mobile slide-over sidebar */}
+        {isSidebarOpen && (
+          <div className="fixed inset-0 z-40 md:hidden">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setIsSidebarOpen(false)} />
+            <div className="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-slate-900 shadow-lg flex flex-col">
+              <div className="flex items-center justify-between px-4 py-4 border-b">
+                <h2 className="text-lg tracking-tight">Chats</h2>
+                <Button size="icon" variant="ghost" onClick={() => setIsSidebarOpen(false)} aria-label="Close menu">
+                  <X className="size-4" />
+                </Button>
+              </div>
+              {sidebarContent}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col h-screen">
           <header className="sticky top-0 z-10 flex py-4 items-center gap-1 border-b bg-background px-4">
+            <Button size="icon" variant="ghost" className="md:hidden" onClick={() => setIsSidebarOpen(true)} aria-label="Open menu">
+              <Menu className="size-4" />
+            </Button>
             <h1 className="text-xl font-semibold">{rooms.find(r => r.id === selectedRoom)?.name ?? 'Global Chat'}</h1>
           </header>
           <main className="flex-1 overflow-hidden p-4">
