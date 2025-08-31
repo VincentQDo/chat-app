@@ -35,8 +35,7 @@ app.get("/globalmessages", async (req, res) => {
   /** @type {Message[]} */
   const messages = await response.json();
   messages.sort((a, b) => (a.updatedAt > b.updatedAt ? 1 : -1));
-  const result = messages.slice(-20);
-  res.json(result);
+  res.json(messages);
 });
 
 // Define a simple route for HTTP
