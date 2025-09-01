@@ -1,14 +1,13 @@
 "use client";
-import { CornerDownLeft, LogOut, SquareUser, Plus, Menu, X, PlusIcon, MessageCircle } from "lucide-react"
 
 import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState, FormEvent } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
 import { logOut } from "@/lib/auth-provider";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { NavUser } from "@/components/nav-user";
+import AppSidebar from '@/components/app-sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+
 
 export default function GlobalChat() {
   const apiUrl = getBackendBaseUrl();
@@ -20,14 +19,8 @@ export default function GlobalChat() {
   const isInputFocus = useRef(false);
   const [rooms, setRooms] = useState([{ id: 'global', name: 'Global Chat', type: 'room' }]);
   const [selectedRoom, setSelectedRoom] = useState('global');
-  const [showRoomModal, setShowRoomModal] = useState(false);
-  const [modalMode, setModalMode] = useState<'room' | 'dm'>('room');
-  const [newName, setNewName] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const socket = useRef<Socket | null>(null);
-  const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
-  const formRef = useRef<HTMLFormElement | null>(null);
 
   const addRoom = (name: string) => {
     const id = `room:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
@@ -176,53 +169,9 @@ export default function GlobalChat() {
     <>
       {/* {Sidebar wrapper start} */}
       <SidebarProvider>
-
+        <AppSidebar userName={userName}></AppSidebar>
         {/* {Actual Sidebar start} */}
-        <Sidebar>
-          <SidebarHeader>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  className="data-[slot=sidebar-menu-button]:!p-1.5"
-                >
-                  <a href="#">
-                    <span className="text-base font-semibold">Banterbox</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarMenu>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton>
-                      <PlusIcon size={16} />
-                      <span>New Chats</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-                <SidebarGroup>
-                  <SidebarGroupLabel>Active Chats</SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        className="data-[slot=sidebar-menu-button]:!p-1.5"
-                      >
-                        <span>Global Chat</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              </SidebarMenu>
-            </SidebarGroup>
-          </SidebarContent>
-          <SidebarFooter>
-            <NavUser user={{ name: userName, email: 'test@example.email' }} />
-          </SidebarFooter>
-        </Sidebar>
+
         {/* {Actual Sidebar end} */}
 
         {/* {Main content on right of sidebar start} */}
