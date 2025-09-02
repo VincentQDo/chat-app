@@ -4,7 +4,7 @@ import { NavUser } from "@/components/nav-user";
 
 export default function AppSidebar({ userName }: { userName: string }) {
   return (
-    <Sidebar>
+    <Sidebar variant="inset">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

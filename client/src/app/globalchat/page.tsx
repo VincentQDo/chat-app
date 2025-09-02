@@ -6,7 +6,9 @@ import { io, Socket } from 'socket.io-client';
 import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
 import { logOut } from "@/lib/auth-provider";
 import AppSidebar from '@/components/app-sidebar';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 
 
 export default function GlobalChat() {
@@ -167,22 +169,70 @@ export default function GlobalChat() {
 
   return (
     <>
-      {/* {Sidebar wrapper start} */}
       <SidebarProvider>
-        <AppSidebar userName={userName}></AppSidebar>
-        {/* {Actual Sidebar start} */}
-
-        {/* {Actual Sidebar end} */}
-
-        {/* {Main content on right of sidebar start} */}
-        <main>
-          <SidebarTrigger></SidebarTrigger>
-          <p>Test</p>
-        </main>
-        {/* {Main content on right of sidebar end} */}
-
+        <div className='flex min-h-screen'>
+          <AppSidebar userName={userName}></AppSidebar>
+          <SidebarInset>
+            <header className='p-2 flex'>
+              <SidebarTrigger></SidebarTrigger>
+              <h1 className='text-lg font-semibold'>Global Chat</h1>
+            </header>
+            <Separator />
+            <main className='flex-1 flex flex-col overflow-auto p-4 space-y-2 max-h-[calc(100vh-158px)]'>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span><span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span><span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span><span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span><span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span><span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span><span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span><span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+              <span>test</span>
+            </main>
+            <footer className='p-4 w-full'>
+              <Textarea className='bottom-0 left-1 right-1 w-full' placeholder='Type your message here...'></Textarea>
+            </footer>
+          </SidebarInset>
+        </div>
       </SidebarProvider>
-      {/* {Sidebar wrapper end} */}
     </>
   );
 }
