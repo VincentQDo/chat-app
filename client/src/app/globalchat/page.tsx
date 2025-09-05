@@ -102,7 +102,7 @@ export default function GlobalChat() {
 
     socket.current.on('message', (data: WebsocketServerResponse) => {
       if (data.message) {
-        setMessages((prevMessages) => [{ ...data.message! }, ...prevMessages])
+        setMessages((prevMessages) => [...prevMessages, { ...data.message! }])
         sendNotification(data)
       }
     })
@@ -140,11 +140,11 @@ export default function GlobalChat() {
       let messages: Message[] = []
       if (headers.status === 200) {
         messages = await headers.json()
-        messages.sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
+        messages.sort((a, b) => Number(a.createdAt) - Number(b.createdAt))
       }
       setMessages(messages)
     }
-
+    data()
     return () => {
       socket.current?.disconnect()
     }
@@ -159,7 +159,7 @@ export default function GlobalChat() {
       createdAt: Date.now(),
       roomId: selectedRoom,
     } as Message & { roomId?: string };
-    setMessages([messageObject, ...messages]);
+    setMessages([...messages, messageObject]);
     setUserInput('');
     // optimistic emit; backend will be wired later
     socket.current?.emit('message', messageObject);
