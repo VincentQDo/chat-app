@@ -9,6 +9,7 @@ import AppSidebar from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@radix-ui/react-tooltip';
 
 
 export default function GlobalChat() {
@@ -170,68 +171,52 @@ export default function GlobalChat() {
   return (
     <>
       <SidebarProvider>
-        <div className='flex min-h-screen'>
-          <AppSidebar userName={userName}></AppSidebar>
-          <SidebarInset>
-            <header className='p-2 flex'>
-              <SidebarTrigger></SidebarTrigger>
-              <h1 className='text-lg font-semibold'>Global Chat</h1>
-            </header>
-            <Separator />
-            <main className='flex-1 flex flex-col overflow-auto p-4 space-y-2 max-h-[calc(100vh-158px)]'>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span><span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span><span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span><span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span><span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span><span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span><span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span><span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-              <span>test</span>
-            </main>
-            <footer className='p-4 w-full'>
-              <Textarea className='bottom-0 left-1 right-1 w-full' placeholder='Type your message here...'></Textarea>
-            </footer>
-          </SidebarInset>
-        </div>
+        <AppSidebar userName={userName}></AppSidebar>
+        <SidebarInset>
+          <header className='p-2 flex'>
+            <SidebarTrigger></SidebarTrigger>
+            <h1 className='text-lg font-semibold'>Global Chat</h1>
+          </header>
+          <Separator />
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Example message from someone else */}
+            <div className="flex items-start gap-2">
+              <div className="h-8 w-8 rounded-full bg-gray-300"></div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="max-w-sm rounded-2xl bg-muted px-3 py-2 cursor-default">
+                      <p className="text-sm">Hey there! How is it going?</p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">10:24 AM testext</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            {/* Example message from you */}
+            <div className="flex items-start justify-end gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="max-w-sm rounded-2xl bg-primary text-primary-foreground px-3 py-2 cursor-default">
+                      <p className="text-sm">All good! Just testing this chat UI.</p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">10:25 AM</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <div className="h-8 w-8 rounded-full bg-gray-300"></div>
+            </div>
+          </div>
+          <footer className='p-4 w-full'>
+            <Textarea className='bottom-0 left-1 right-1 w-full' placeholder='Type your message here...'></Textarea>
+          </footer>
+        </SidebarInset>
       </SidebarProvider>
     </>
   );
