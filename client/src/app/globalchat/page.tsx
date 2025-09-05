@@ -10,6 +10,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@radix-ui/react-tooltip';
+import AppMessage from '@/components/app-message';
 
 
 export default function GlobalChat() {
@@ -22,7 +23,7 @@ export default function GlobalChat() {
   const isInputFocus = useRef(false);
   const [rooms, setRooms] = useState([{ id: 'global', name: 'Global Chat', type: 'room' }]);
   const [selectedRoom, setSelectedRoom] = useState('global');
-
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const socket = useRef<Socket | null>(null);
 
   const addRoom = (name: string) => {
@@ -164,6 +165,16 @@ export default function GlobalChat() {
     socket.current?.emit('message', messageObject);
   }
 
+
+  const handleInputChange = (e) => {
+    setUserInput(e.target.value)
+
+    // Auto-resize
+    const textarea = e.target
+    textarea.style.height = 'auto'
+    textarea.style.height = textarea.scrollHeight + 'px'
+  }
+
   const isMobileDevice = () => {
     return /Android|webOS|Iphone|iPad|iPod/i.test(navigator.userAgent)
   }
@@ -178,43 +189,22 @@ export default function GlobalChat() {
             <h1 className='text-lg font-semibold'>Global Chat</h1>
           </header>
           <Separator />
+          {/* Messages container start*/}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Example message from someone else */}
-            <div className="flex items-start gap-2">
-              <div className="h-8 w-8 rounded-full bg-gray-300"></div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="max-w-sm rounded-2xl bg-muted px-3 py-2 cursor-default">
-                      <p className="text-sm">Hey there! How is it going?</p>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">10:24 AM testext</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            {/* Example message from you */}
-            <div className="flex items-start justify-end gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="max-w-sm rounded-2xl bg-primary text-primary-foreground px-3 py-2 cursor-default">
-                      <p className="text-sm">All good! Just testing this chat UI.</p>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">10:25 AM</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <div className="h-8 w-8 rounded-full bg-gray-300"></div>
-            </div>
+            <AppMessage message="Hey there! How is it going?" date="01/01/2025  10:24 PM" isMine={false} />
+            <AppMessage message="All good! Just testing this chat UI." date="01/01/2025  10:24 PM" isMine={true} />
           </div>
+          {/* Messages container end */}
           <footer className='p-4 w-full'>
-            <Textarea className='bottom-0 left-1 right-1 w-full' placeholder='Type your message here...'></Textarea>
+            <Textarea
+              ref={textareaRef}
+              value={userInput}
+              onChange={handleInputChange}
+              placeholder="Type your message here..."
+              className='w-full text-base resize-none rounded-md border p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
+              rows={1}
+            />
           </footer>
         </SidebarInset>
       </SidebarProvider>

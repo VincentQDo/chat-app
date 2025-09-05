@@ -26,7 +26,7 @@ export default function AppSidebar({ userName }: { userName: string }) {
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <PlusIcon size={16} />
-                  <span>New Chats</span>
+                  <span className="text-base">New Chats</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -35,7 +35,7 @@ export default function AppSidebar({ userName }: { userName: string }) {
               <SidebarGroupContent>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="data-[slot=sidebar-menu-button]:!p-1.5"
+                    className="data-[slot=sidebar-menu-button]:!p-1.5 text-base"
                   >
                     <span>Global Chat</span>
                   </SidebarMenuButton>
