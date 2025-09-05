@@ -145,8 +145,6 @@ export default function GlobalChat() {
       setMessages(messages)
     }
 
-    data()
-
     return () => {
       socket.current?.disconnect()
     }
@@ -194,8 +192,14 @@ export default function GlobalChat() {
           {/* Messages container start*/}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Example message from someone else */}
-            <AppMessage message="Hey there! How is it going?" date="01/01/2025  10:24 PM" isMine={false} />
-            <AppMessage message="All good! Just testing this chat UI." date="01/01/2025  10:24 PM" isMine={true} />
+            {messages.map((msg, index) => (
+              <AppMessage
+                key={index}
+                message={msg.message}
+                date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
+                isMine={msg.userId === userName}
+              />
+            ))}
           </div>
           {/* Messages container end */}
           <footer className='p-4 w-full'>
