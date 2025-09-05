@@ -11,6 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@radix-ui/react-tooltip';
 import AppMessage from '@/components/app-message';
+import { Button } from '@/components/ui/button';
+import { SendHorizontal } from 'lucide-react';
 
 
 export default function GlobalChat() {
@@ -166,7 +168,7 @@ export default function GlobalChat() {
   }
 
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserInput(e.target.value)
 
     // Auto-resize
@@ -197,14 +199,26 @@ export default function GlobalChat() {
           </div>
           {/* Messages container end */}
           <footer className='p-4 w-full'>
-            <Textarea
-              ref={textareaRef}
-              value={userInput}
-              onChange={handleInputChange}
-              placeholder="Type your message here..."
-              className='w-full text-base resize-none rounded-md border p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
-              rows={1}
-            />
+            <form onSubmit={handleSendMessage} className='flex gap-2'>
+              <Textarea
+                ref={textareaRef}
+                value={userInput}
+                onChange={handleInputChange}
+                placeholder="Type your message here..."
+                className='w-full text-base resize-none rounded-md p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
+                rows={isMobileDevice() ? 1 : 3}
+                name='message'
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="self-end flex-shrink-0 h-8 w-8 rounded-full p-0"
+                disabled={!userInput.trim()}
+                aria-label="Send message"
+              >
+                <SendHorizontal />
+              </Button>
+            </form>
           </footer>
         </SidebarInset>
       </SidebarProvider>
