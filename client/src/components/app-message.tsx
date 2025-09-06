@@ -68,7 +68,7 @@ export default function AppMessage({
 
   return (
     // Discord/Mattermost compact message style with color assignment
-    <div className="flex items-start gap-3 px-4 py-1 hover:bg-muted/50 group">
+    <div className="flex items-start gap-3 px-4 hover:bg-muted/50 group">
       {/* Avatar with consistent color */}
       <div className={`h-8 w-8 rounded-full ${avatarColor} flex-shrink-0 mt-0.5 flex items-center justify-center text-white text-xs font-medium`}>
         {avatarLetter}

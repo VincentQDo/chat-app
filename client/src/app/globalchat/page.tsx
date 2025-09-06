@@ -15,6 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Switch } from '@/components/ui/switch';
 import AppMessageLarge from '@/components/app-message-large';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface TypingUser {
   userId: string;
@@ -360,7 +361,7 @@ export default function GlobalChat() {
           <Separator className="flex-shrink-0" />
 
           {/* Messages container - this will be scrollable and take up remaining space */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" ref={messagesContainerRef} onScroll={handleMessageScrolling}>
+          <div className={cn("flex-1 overflow-y-auto p-4 min-h-0", { "space-y-4": !isCompact })} ref={messagesContainerRef} onScroll={handleMessageScrolling}>
             {isCompact ?
               messages.map((msg, index) => (
                 <AppMessage
