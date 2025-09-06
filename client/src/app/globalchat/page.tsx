@@ -9,7 +9,6 @@ import AppSidebar from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@radix-ui/react-tooltip';
 import AppMessage from '@/components/app-message';
 import { Button } from '@/components/ui/button';
 import { SendHorizontal } from 'lucide-react';
@@ -200,15 +199,15 @@ export default function GlobalChat() {
     <>
       <SidebarProvider>
         <AppSidebar userName={userName}></AppSidebar>
-        <SidebarInset>
-          <header className='p-2 flex'>
+        <SidebarInset className="flex flex-col h-screen">
+          <header className='p-2 flex flex-shrink-0'>
             <SidebarTrigger></SidebarTrigger>
             <h1 className='text-lg font-semibold'>Global Chat</h1>
           </header>
-          <Separator />
-          {/* Messages container start*/}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Example message from someone else */}
+          <Separator className="flex-shrink-0" />
+
+          {/* Messages container - this will be scrollable and take up remaining space */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
             {messages.map((msg, index) => (
               <AppMessage
                 key={index}
@@ -218,8 +217,9 @@ export default function GlobalChat() {
               />
             ))}
           </div>
-          {/* Messages container end */}
-          <footer className='p-4 w-full'>
+
+          {/* Input footer - this will stick to the bottom */}
+          <footer className='p-4 w-full flex-shrink-0 border-t bg-background'>
             <form onSubmit={handleSendMessage} className='flex gap-2'>
               <Textarea
                 ref={textareaRef}
