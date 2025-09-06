@@ -27,9 +27,17 @@ export async function verifyToken(req, res, next) {
 	}
 }
 
+// Extend Socket interface to include custom properties
 /**
- * @param {Socket} socket 
- * @param {(err?: Error) => void} next 
+ * @typedef {import("socket.io").Socket & {
+ *   user?: any;
+ *   tokenCheckInterval?: NodeJS.Timeout;
+ * }} ExtendedSocket
+ */
+
+/**
+ * @param {ExtendedSocket} socket
+ * @param {(err?: Error) => void} next
  * */
 export async function websocketVerifyToken(socket, next) {
 	const token = socket.handshake.auth.token;
