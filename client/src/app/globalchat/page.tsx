@@ -199,7 +199,7 @@ export default function GlobalChat() {
     <>
       <SidebarProvider>
         <AppSidebar userName={userName}></AppSidebar>
-        <SidebarInset className="flex flex-col h-screen">
+        <SidebarInset className="flex flex-col h-[calc(100dvh-1rem)]">
           <header className='p-2 flex flex-shrink-0'>
             <SidebarTrigger></SidebarTrigger>
             <h1 className='text-lg font-semibold'>Global Chat</h1>
