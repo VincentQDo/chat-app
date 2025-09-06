@@ -12,6 +12,9 @@ import AppMessage from '@/components/app-message';
 import { Button } from '@/components/ui/button';
 import { SendHorizontal } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Switch } from '@/components/ui/switch';
+import AppMessageLarge from '@/components/app-message-large';
+import { Label } from '@/components/ui/label';
 
 interface TypingUser {
   userId: string;
@@ -36,6 +39,17 @@ export default function GlobalChat() {
   const shouldScroll = useRef(true);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTyping = useRef(false);
+  const [isCompact, setIsCompact] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('isCompact');
+      return stored ? JSON.parse(stored) : false;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('isCompact', JSON.stringify(isCompact));
+  }, [isCompact]);
 
   const addRoom = (name: string) => {
     const id = `room:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
@@ -333,24 +347,39 @@ export default function GlobalChat() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="flex flex-col h-[calc(100dvh-1rem)]">
-          <header className='p-2 flex flex-shrink-0'>
-            <SidebarTrigger></SidebarTrigger>
-            <h1 className='text-lg font-semibold'>Global Chat</h1>
+          <header className='p-2 flex flex-shrink-0 justify-between'>
+            <div className='flex items-center'>
+              <SidebarTrigger></SidebarTrigger>
+              <h1 className='text-lg font-semibold'>Global Chat</h1>
+            </div>
+            <div className='flex items-center ml-4 space-x-2'>
+              <Switch checked={isCompact} onCheckedChange={setIsCompact} id="compact-mode" />
+              <Label htmlFor="compact-mode">Compact Mode</Label>
+            </div>
           </header>
           <Separator className="flex-shrink-0" />
 
           {/* Messages container - this will be scrollable and take up remaining space */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" ref={messagesContainerRef} onScroll={handleMessageScrolling}>
-            {messages.map((msg, index) => (
-              <AppMessage
-                key={index}
-                message={msg.message}
-                date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
-                isMine={msg.userId === userName}
-                senderName={msg.userId}
-                senderId={msg.userId}
-              />
-            ))}
+            {isCompact ?
+              messages.map((msg, index) => (
+                <AppMessage
+                  key={index}
+                  message={msg.message}
+                  date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
+                  isMine={msg.userId === userName}
+                  senderName={msg.userId}
+                  senderId={msg.userId}
+                />
+              )) :
+              messages.map((msg, index) => (
+                <AppMessageLarge
+                  key={index}
+                  message={msg.message}
+                  date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
+                  isMine={msg.userId === userName}
+                />
+              ))}
 
             {/* Typing indicator */}
             {renderTypingIndicator()}
