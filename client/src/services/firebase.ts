@@ -54,7 +54,7 @@ export async function validateToken(token: string | null): Promise<AuthResult> {
         const response = await fetchData('/authenticate');
         console.log('Authenticate res: ', response)
         if (response.status === 200) {
-            return { error: null, user: null }
+            return { error: null, user: auth.currentUser }
         } else {
             return { error: response.statusText, user: null }
         }
