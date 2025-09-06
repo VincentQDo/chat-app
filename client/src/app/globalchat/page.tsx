@@ -179,6 +179,23 @@ export default function GlobalChat() {
     return /Android|webOS|Iphone|iPad|iPod/i.test(navigator.userAgent)
   }
 
+  function handleKeyDownEvent(event: React.KeyboardEvent<HTMLTextAreaElement>): void {
+    // Mark that the input is focused (useful for notifications)
+    onInputFocus();
+
+    // Send message on Enter (without Shift) on desktop. Allow Shift+Enter to insert a newline on desktop.
+    if (!isMobileDevice() && event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+      return;
+    }
+
+    // Allow Escape to blur the textarea (exit input mode)
+    if (event.key === 'Escape') {
+      (event.target as HTMLTextAreaElement).blur();
+      onInputBlur();
+    }
+  }
   return (
     <>
       <SidebarProvider>
@@ -208,6 +225,7 @@ export default function GlobalChat() {
                 ref={textareaRef}
                 value={userInput}
                 onChange={handleInputChange}
+                onKeyDown={handleKeyDownEvent}
                 placeholder="Type your message here..."
                 className='w-full text-base resize-none rounded-md p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
                 rows={isMobileDevice() ? 1 : 3}
