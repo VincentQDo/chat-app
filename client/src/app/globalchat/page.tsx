@@ -1,7 +1,7 @@
 "use client";
 
 import { Message, WebsocketServerResponse } from '@/models/models';
-import { useEffect, useRef, useState, FormEvent } from 'react';
+import { useEffect, useRef, useState, FormEvent, useLayoutEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
 import AppSidebar from '@/components/app-sidebar';
@@ -25,8 +25,10 @@ export default function GlobalChat() {
   const [rooms, setRooms] = useState([{ id: 'global', name: 'Global Chat', type: 'room' }]);
   const [selectedRoom, setSelectedRoom] = useState('global');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const socket = useRef<Socket | null>(null);
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile();
+  const shouldScroll = useRef(true);
 
   const addRoom = (name: string) => {
     const id = `room:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
@@ -58,6 +60,15 @@ export default function GlobalChat() {
       new Notification("New Message", { body: data.message?.message })
     }
   }
+
+  useLayoutEffect(() => {
+    if (messagesContainerRef.current && shouldScroll.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages]);
 
   useEffect(() => {
     console.log('input focus is changeing ', isInputFocus)
@@ -140,6 +151,7 @@ export default function GlobalChat() {
       setMessages(messages)
     }
     data()
+
     return () => {
       socket.current?.disconnect()
     }
@@ -156,10 +168,19 @@ export default function GlobalChat() {
     } as Message & { roomId?: string };
     setMessages([...messages, messageObject]);
     setUserInput('');
+    shouldScroll.current = true;
     // optimistic emit; backend will be wired later
     socket.current?.emit('message', messageObject);
   }
 
+  const handleMessageScrolling = () => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    // If the user is within 100px of the bottom, consider it "at the bottom"
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    shouldScroll.current = isAtBottom;
+    console.log('User is at bottom:', isAtBottom);
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setUserInput(e.target.value)
@@ -199,7 +220,7 @@ export default function GlobalChat() {
           <Separator className="flex-shrink-0" />
 
           {/* Messages container - this will be scrollable and take up remaining space */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" ref={messagesContainerRef} onScroll={handleMessageScrolling}>
             {messages.map((msg, index) => (
               <AppMessage
                 key={index}
