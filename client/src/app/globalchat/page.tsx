@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import AppMessage from '@/components/app-message';
 import { Button } from '@/components/ui/button';
 import { SendHorizontal } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 export default function GlobalChat() {
@@ -25,6 +26,7 @@ export default function GlobalChat() {
   const [selectedRoom, setSelectedRoom] = useState('global');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const socket = useRef<Socket | null>(null);
+  const isMobile = useIsMobile()
 
   const addRoom = (name: string) => {
     const id = `room:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
@@ -168,16 +170,12 @@ export default function GlobalChat() {
     textarea.style.height = textarea.scrollHeight + 'px'
   }
 
-  const isMobileDevice = () => {
-    return /Android|webOS|Iphone|iPad|iPod/i.test(navigator.userAgent)
-  }
-
   function handleKeyDownEvent(event: React.KeyboardEvent<HTMLTextAreaElement>): void {
     // Mark that the input is focused (useful for notifications)
     onInputFocus();
 
     // Send message on Enter (without Shift) on desktop. Allow Shift+Enter to insert a newline on desktop.
-    if (!isMobileDevice() && event.key === 'Enter' && !event.shiftKey) {
+    if (!isMobile && event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleSendMessage();
       return;
@@ -222,7 +220,7 @@ export default function GlobalChat() {
                 onKeyDown={handleKeyDownEvent}
                 placeholder="Type your message here..."
                 className='w-full text-base resize-none rounded-md p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
-                rows={isMobileDevice() ? 1 : 3}
+                rows={isMobile ? 1 : 3}
                 name='message'
               />
               <Button
