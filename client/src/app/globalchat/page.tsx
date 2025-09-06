@@ -219,7 +219,7 @@ export default function GlobalChat() {
           </div>
 
           {/* Input footer - this will stick to the bottom */}
-          <footer className='p-4 w-full flex-shrink-0 border-t bg-background'>
+          <footer className='p-4 w-full flex-shrink-0 bg-background'>
             <form onSubmit={handleSendMessage} className='flex gap-2'>
               <Textarea
                 ref={textareaRef}
