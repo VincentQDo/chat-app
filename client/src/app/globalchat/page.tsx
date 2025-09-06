@@ -347,6 +347,8 @@ export default function GlobalChat() {
                 message={msg.message}
                 date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
                 isMine={msg.userId === userName}
+                senderName={msg.userId}
+                senderId={msg.userId}
               />
             ))}
 
