@@ -17,17 +17,7 @@ app.use(bodyParser.json());
 app.use(verifyToken);
 
 app.get("/authenticate", (req, res) => {
-  const userInfo = {
-    uid: req.body.user.uid,
-    email: req.body.user.email,
-    name: req.body.user.name,
-    emailVerified: req.body.user.email_verified,
-  };
-  res.send({
-    authenticated: true,
-    userInfo: userInfo,
-    tokenExpiration: req.body.user.exp,
-  });
+  res.send(true);
 });
 
 app.get("/globalmessages", async (req, res) => {

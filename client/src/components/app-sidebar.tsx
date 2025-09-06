@@ -2,7 +2,7 @@ import { PlusIcon } from "lucide-react"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { NavUser } from "@/components/nav-user";
 
-export default function AppSidebar({ userName }: { userName: string }) {
+export default function AppSidebar() {
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
@@ -46,7 +46,7 @@ export default function AppSidebar({ userName }: { userName: string }) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={{ name: userName, email: 'test@example.email' }} />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   )

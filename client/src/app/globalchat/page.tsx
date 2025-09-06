@@ -4,7 +4,6 @@ import { Message, WebsocketServerResponse } from '@/models/models';
 import { useEffect, useRef, useState, FormEvent } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
-import { logOut } from "@/lib/auth-provider";
 import AppSidebar from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,11 +55,6 @@ export default function GlobalChat() {
     } else {
       new Notification("New Message", { body: data.message?.message })
     }
-  }
-
-  const logout = () => {
-    console.log('logging out')
-    logOut()
   }
 
   useEffect(() => {
@@ -198,7 +192,7 @@ export default function GlobalChat() {
   return (
     <>
       <SidebarProvider>
-        <AppSidebar userName={userName}></AppSidebar>
+        <AppSidebar />
         <SidebarInset className="flex flex-col h-[calc(100dvh-1rem)]">
           <header className='p-2 flex flex-shrink-0'>
             <SidebarTrigger></SidebarTrigger>
