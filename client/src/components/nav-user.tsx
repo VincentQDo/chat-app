@@ -21,10 +21,14 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useAuth } from "@/lib/auth-provider";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
+import { useCompact } from "@/lib/compact-provider";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
   const { user, logOut } = useAuth();
+  const { isCompact, setIsCompact } = useCompact();
 
   return (
     <SidebarMenu>
@@ -49,10 +53,15 @@ export function NavUser() {
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+              <div className="flex flex-col gap-4 px-1 py-1.5 text-left text-sm">
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user?.displayName ?? 'N/A'}</span>
                   <span className="truncate text-xs">{user?.email ?? 'N/A'}</span>
+                </div>
+                <div className='flex items-center space-x-2'>
+                  <Label htmlFor="compact-mode">Large</Label>
+                  <Switch checked={isCompact} onCheckedChange={setIsCompact} id="compact-mode" />
+                  <Label htmlFor="compact-mode">Compact</Label>
                 </div>
               </div>
             </DropdownMenuLabel>

@@ -23,7 +23,9 @@ export default function RootLayout({
         inter.variable
       )}>
         <div>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </div>
       </body>
     </html>

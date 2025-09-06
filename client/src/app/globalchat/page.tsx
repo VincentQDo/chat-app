@@ -12,10 +12,9 @@ import AppMessage from '@/components/app-message';
 import { Button } from '@/components/ui/button';
 import { SendHorizontal } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Switch } from '@/components/ui/switch';
 import AppMessageLarge from '@/components/app-message-large';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useCompact } from '@/lib/compact-provider';
 
 interface TypingUser {
   userId: string;
@@ -26,7 +25,6 @@ export default function GlobalChat() {
   const apiUrl = getBackendBaseUrl();
   const [userInput, setUserInput] = useState('');
   const [userName, setUserName] = useState('');
-  const [numOfUsers, setNumOfUsers] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [numOfUnreadMessages, setNumOfUnreadMessages] = useState(0);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
@@ -40,17 +38,7 @@ export default function GlobalChat() {
   const shouldScroll = useRef(true);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTyping = useRef(false);
-  const [isCompact, setIsCompact] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('isCompact');
-      return stored ? JSON.parse(stored) : false;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('isCompact', JSON.stringify(isCompact));
-  }, [isCompact]);
+  const { isCompact } = useCompact();
 
   const addRoom = (name: string) => {
     const id = `room:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
@@ -207,30 +195,6 @@ export default function GlobalChat() {
       );
     });
 
-    socket.current.on('userConnected', (data: WebsocketServerResponse) => {
-      if (data) {
-        const anyType = data as any;
-        setNumOfUsers(anyType.message.users)
-        console.log('User Connected: ', anyType.message.users);
-        setMessages((prevMessages) => [{ message: 'User connected', userId: 'System' }, ...prevMessages])
-      }
-    })
-
-    socket.current.on('userDisconnected', (data: WebsocketServerResponse) => {
-      if (data) {
-        const anyType = data as any;
-        setNumOfUsers(anyType.message.users)
-        console.log('User disconnected: ', anyType.message.users);
-        setMessages((prevMessages) => [{ message: 'User disconnected', userId: 'System' }, ...prevMessages])
-
-        // Remove typing indicator for disconnected user
-        const disconnectedUserId = anyType.message.userId;
-        if (disconnectedUserId) {
-          setTypingUsers(prev => prev.filter(user => user.userId !== disconnectedUserId));
-        }
-      }
-    })
-
     socket.current.on('error', (err: WebsocketServerResponse) => {
       console.error('Error from server: ', err)
     })
@@ -345,75 +309,69 @@ export default function GlobalChat() {
 
   return (
     <>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="flex flex-col h-[calc(100dvh-1rem)]">
-          <header className='p-2 flex flex-shrink-0 justify-between'>
-            <div className='flex items-center'>
-              <SidebarTrigger></SidebarTrigger>
-              <h1 className='text-lg font-semibold'>Global Chat</h1>
-            </div>
-            <div className='flex items-center ml-4 space-x-2'>
-              <Switch checked={isCompact} onCheckedChange={setIsCompact} id="compact-mode" />
-              <Label htmlFor="compact-mode">Compact Mode</Label>
-            </div>
-          </header>
-          <Separator className="flex-shrink-0" />
-
-          {/* Messages container - this will be scrollable and take up remaining space */}
-          <div className={cn("flex-1 overflow-y-auto p-4 min-h-0", { "space-y-4": !isCompact })} ref={messagesContainerRef} onScroll={handleMessageScrolling}>
-            {isCompact ?
-              messages.map((msg, index) => (
-                <AppMessage
-                  key={index}
-                  message={msg.message}
-                  date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
-                  isMine={msg.userId === userName}
-                  senderName={msg.userId}
-                  senderId={msg.userId}
-                />
-              )) :
-              messages.map((msg, index) => (
-                <AppMessageLarge
-                  key={index}
-                  message={msg.message}
-                  date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
-                  isMine={msg.userId === userName}
-                />
-              ))}
-
-            {/* Typing indicator */}
-            {renderTypingIndicator()}
+      <AppSidebar />
+      <SidebarInset className="flex flex-col h-[calc(100dvh-1rem)]">
+        <header className='p-2 flex flex-shrink-0 justify-between'>
+          <div className='flex items-center'>
+            <SidebarTrigger></SidebarTrigger>
+            <h1 className='text-lg font-semibold'>Global Chat</h1>
           </div>
+        </header>
+        <Separator className="flex-shrink-0" />
 
-          {/* Input footer - this will stick to the bottom */}
-          <footer className='p-4 w-full flex-shrink-0 bg-background'>
-            <form onSubmit={handleSendMessage} className='flex gap-2'>
-              <Textarea
-                ref={textareaRef}
-                value={userInput}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDownEvent}
-                onBlur={onInputBlur}
-                onFocus={onInputFocus}
-                placeholder="Type your message here..."
-                className='w-full text-base resize-none rounded-md p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
-                rows={isMobile ? 1 : 3}
-                name='message'
+        {/* Messages container - this will be scrollable and take up remaining space */}
+        <div className={cn("flex-1 overflow-y-auto p-4 min-h-0", { "space-y-4": !isCompact })} ref={messagesContainerRef} onScroll={handleMessageScrolling}>
+          {isCompact ?
+            messages.map((msg, index) => (
+              <AppMessage
+                key={index}
+                message={msg.message}
+                date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
+                isMine={msg.userId === userName}
+                senderName={msg.userId}
+                senderId={msg.userId}
               />
-              <Button
-                type="submit"
-                size="icon"
-                className="self-end flex-shrink-0 h-8 w-8 rounded-full p-0"
-                disabled={!userInput.trim()}
-                aria-label="Send message"
-              >
-                <SendHorizontal />
-              </Button>
-            </form>
-          </footer>
-        </SidebarInset>
-      </SidebarProvider>
+            )) :
+            messages.map((msg, index) => (
+              <AppMessageLarge
+                key={index}
+                message={msg.message}
+                date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
+                isMine={msg.userId === userName}
+              />
+            ))}
+
+          {/* Typing indicator */}
+          {renderTypingIndicator()}
+        </div>
+
+        {/* Input footer - this will stick to the bottom */}
+        <footer className='p-4 w-full flex-shrink-0 bg-background'>
+          <form onSubmit={handleSendMessage} className='flex gap-2'>
+            <Textarea
+              ref={textareaRef}
+              value={userInput}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDownEvent}
+              onBlur={onInputBlur}
+              onFocus={onInputFocus}
+              placeholder="Type your message here..."
+              className='w-full text-base resize-none rounded-md p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
+              rows={isMobile ? 1 : 3}
+              name='message'
+            />
+            <Button
+              type="submit"
+              size="icon"
+              className="self-end flex-shrink-0 h-8 w-8 rounded-full p-0"
+              disabled={!userInput.trim()}
+              aria-label="Send message"
+            >
+              <SendHorizontal />
+            </Button>
+          </form>
+        </footer>
+      </SidebarInset>
     </>
   );
 }
