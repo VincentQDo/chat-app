@@ -13,6 +13,10 @@ import { Button } from '@/components/ui/button';
 import { SendHorizontal } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+interface TypingUser {
+  userId: string;
+  roomId: string;
+}
 
 export default function GlobalChat() {
   const apiUrl = getBackendBaseUrl();
@@ -21,6 +25,7 @@ export default function GlobalChat() {
   const [numOfUsers, setNumOfUsers] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
   const [numOfUnreadMessages, setNumOfUnreadMessages] = useState(0);
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const isInputFocus = useRef(false);
   const [rooms, setRooms] = useState([{ id: 'global', name: 'Global Chat', type: 'room' }]);
   const [selectedRoom, setSelectedRoom] = useState('global');
@@ -29,6 +34,8 @@ export default function GlobalChat() {
   const socket = useRef<Socket | null>(null);
   const isMobile = useIsMobile();
   const shouldScroll = useRef(true);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTyping = useRef(false);
 
   const addRoom = (name: string) => {
     const id = `room:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
@@ -61,6 +68,62 @@ export default function GlobalChat() {
     }
   }
 
+  const startTyping = () => {
+    if (!isTyping.current && socket.current) {
+      isTyping.current = true;
+      socket.current.emit('typing:start', { roomId: selectedRoom, userId: userName });
+    }
+  };
+
+  const stopTyping = () => {
+    if (isTyping.current && socket.current) {
+      isTyping.current = false;
+      socket.current.emit('typing:stop', { roomId: selectedRoom, userId: userName });
+    }
+  };
+
+  const handleTypingTimeout = () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping();
+    }, 1000); // Stop typing indicator after 1 second of inactivity
+  };
+
+  const getCurrentRoomTypingUsers = () => {
+    return typingUsers
+      .filter(user => user.roomId === selectedRoom && user.userId !== userName)
+      .map(user => user.userId);
+  };
+
+  const renderTypingIndicator = () => {
+    const currentTypingUsers = getCurrentRoomTypingUsers();
+
+    if (currentTypingUsers.length === 0) return null;
+
+    let typingText = '';
+    if (currentTypingUsers.length === 1) {
+      typingText = `${currentTypingUsers[0]} is typing...`;
+    } else if (currentTypingUsers.length === 2) {
+      typingText = `${currentTypingUsers[0]} and ${currentTypingUsers[1]} are typing...`;
+    } else {
+      typingText = `${currentTypingUsers.length} people are typing...`;
+    }
+
+    return (
+      <div className="px-4 py-2 text-sm text-muted-foreground italic">
+        {typingText}
+        <span className="inline-flex ml-1">
+          <span className="animate-bounce">.</span>
+          <span className="animate-bounce" style={{ animationDelay: '0.1s' }}>.</span>
+          <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
+        </span>
+      </div>
+    );
+  };
+
   useLayoutEffect(() => {
     if (messagesContainerRef.current && shouldScroll.current) {
       messagesContainerRef.current.scrollTo({
@@ -68,7 +131,7 @@ export default function GlobalChat() {
         behavior: 'smooth',
       });
     }
-  }, [messages]);
+  }, [messages, typingUsers]); // Also scroll when typing users change
 
   useEffect(() => {
     console.log('input focus is changeing ', isInputFocus)
@@ -84,6 +147,7 @@ export default function GlobalChat() {
   const onInputBlur = () => {
     isInputFocus.current = false
     console.log('input is not focused')
+    stopTyping(); // Stop typing when input loses focus
   }
 
   useEffect(() => {
@@ -113,6 +177,21 @@ export default function GlobalChat() {
       }
     })
 
+    // Typing indicator event listeners
+    socket.current.on('typing:start', (data: { userId: string; roomId: string }) => {
+      setTypingUsers(prev => {
+        const exists = prev.find(user => user.userId === data.userId && user.roomId === data.roomId);
+        if (exists) return prev;
+        return [...prev, data];
+      });
+    });
+
+    socket.current.on('typing:stop', (data: { userId: string; roomId: string }) => {
+      setTypingUsers(prev =>
+        prev.filter(user => !(user.userId === data.userId && user.roomId === data.roomId))
+      );
+    });
+
     socket.current.on('userConnected', (data: WebsocketServerResponse) => {
       if (data) {
         const anyType = data as any;
@@ -128,6 +207,12 @@ export default function GlobalChat() {
         setNumOfUsers(anyType.message.users)
         console.log('User disconnected: ', anyType.message.users);
         setMessages((prevMessages) => [{ message: 'User disconnected', userId: 'System' }, ...prevMessages])
+
+        // Remove typing indicator for disconnected user
+        const disconnectedUserId = anyType.message.userId;
+        if (disconnectedUserId) {
+          setTypingUsers(prev => prev.filter(user => user.userId !== disconnectedUserId));
+        }
       }
     })
 
@@ -138,6 +223,8 @@ export default function GlobalChat() {
     socket.current.on('disconnect', (reason) => {
       console.error('Disconnected from server for the following reason: ', reason)
       setMessages((prevMessages) => [{ message: 'Disconnected for the following reason: ' + reason, userId: 'System' }, ...prevMessages])
+      // Clear typing indicators on disconnect
+      setTypingUsers([]);
     })
 
     // get messages
@@ -153,13 +240,28 @@ export default function GlobalChat() {
     data()
 
     return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
       socket.current?.disconnect()
     }
   }, [apiUrl])
 
+  // Clean up typing indicators when switching rooms
+  useEffect(() => {
+    stopTyping();
+  }, [selectedRoom]);
+
   const handleSendMessage = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     if (!userInput.trim()) return;
+
+    // Stop typing indicator when sending message
+    stopTyping();
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
     const messageObject: Message = {
       userId: userName,
       message: userInput,
@@ -183,7 +285,24 @@ export default function GlobalChat() {
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setUserInput(e.target.value)
+    const value = e.target.value;
+    setUserInput(value);
+
+    // Handle typing indicator
+    if (value.trim() && !isTyping.current) {
+      startTyping();
+    } else if (!value.trim() && isTyping.current) {
+      stopTyping();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      return;
+    }
+
+    // Reset typing timeout
+    if (value.trim()) {
+      handleTypingTimeout();
+    }
 
     // Auto-resize
     const textarea = e.target
@@ -208,6 +327,7 @@ export default function GlobalChat() {
       onInputBlur();
     }
   }
+
   return (
     <>
       <SidebarProvider>
@@ -229,6 +349,9 @@ export default function GlobalChat() {
                 isMine={msg.userId === userName}
               />
             ))}
+
+            {/* Typing indicator */}
+            {renderTypingIndicator()}
           </div>
 
           {/* Input footer - this will stick to the bottom */}
@@ -239,6 +362,8 @@ export default function GlobalChat() {
                 value={userInput}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDownEvent}
+                onBlur={onInputBlur}
+                onFocus={onInputFocus}
                 placeholder="Type your message here..."
                 className='w-full text-base resize-none rounded-md p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
                 rows={isMobile ? 1 : 3}
