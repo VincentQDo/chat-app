@@ -1,20 +1,20 @@
 "use client";
 
-import { Message, WebsocketServerResponse } from '@/models/models';
-import { useEffect, useRef, useState, FormEvent, useLayoutEffect } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { Message, WebsocketServerResponse } from "@/models/models";
+import { useEffect, useRef, useState, FormEvent, useLayoutEffect } from "react";
+import { io, Socket } from "socket.io-client";
 import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
-import AppSidebar from '@/components/app-sidebar';
-import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
-import AppMessage from '@/components/app-message';
-import { Button } from '@/components/ui/button';
-import { SendHorizontal } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import AppMessageLarge from '@/components/app-message-large';
-import { cn } from '@/lib/utils';
-import { useCompact } from '@/lib/compact-provider';
+import AppSidebar from "@/components/app-sidebar";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import AppMessage from "@/components/app-message";
+import { Button } from "@/components/ui/button";
+import { SendHorizontal } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import AppMessageLarge from "@/components/app-message-large";
+import { cn } from "@/lib/utils";
+import { useCompact } from "@/lib/compact-provider";
 
 interface TypingUser {
   userId: string;
@@ -23,14 +23,14 @@ interface TypingUser {
 
 export default function GlobalChat() {
   const apiUrl = getBackendBaseUrl();
-  const [userInput, setUserInput] = useState('');
-  const [userName, setUserName] = useState('');
+  const [userInput, setUserInput] = useState("");
+  const [userName, setUserName] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [numOfUnreadMessages, setNumOfUnreadMessages] = useState(0);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const isInputFocus = useRef(false);
-  const [rooms, setRooms] = useState([{ id: 'global', name: 'Global Chat', type: 'room' }]);
-  const [selectedRoom, setSelectedRoom] = useState('global');
+  const [rooms, setRooms] = useState([{ id: "global", name: "Global Chat", type: "room" }]);
+  const [selectedRoom, setSelectedRoom] = useState("global");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const socket = useRef<Socket | null>(null);
@@ -41,9 +41,9 @@ export default function GlobalChat() {
   const { isCompact } = useCompact();
 
   const addRoom = (name: string) => {
-    const id = `room:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
+    const id = `room:${name.trim().toLowerCase().replace(/\s+/g, "-")}`;
     if (rooms.find(r => r.id === id)) return false;
-    setRooms(prev => [...prev, { id, name: name.trim(), type: 'room' }]);
+    setRooms(prev => [...prev, { id, name: name.trim(), type: "room" }]);
     setSelectedRoom(id);
     return true;
   }
@@ -51,7 +51,7 @@ export default function GlobalChat() {
   const addDm = (username: string) => {
     const id = `dm:${username.trim().toLowerCase()}`;
     if (rooms.find(r => r.id === id)) return false;
-    setRooms(prev => [...prev, { id, name: username.trim(), type: 'dm' }]);
+    setRooms(prev => [...prev, { id, name: username.trim(), type: "dm" }]);
     setSelectedRoom(id);
     return true;
   }
@@ -74,14 +74,14 @@ export default function GlobalChat() {
   const startTyping = () => {
     if (!isTyping.current && socket.current) {
       isTyping.current = true;
-      socket.current.emit('typing:start', { roomId: selectedRoom, userId: userName });
+      socket.current.emit("typing:start", { roomId: selectedRoom, userId: userName });
     }
   };
 
   const stopTyping = () => {
     if (isTyping.current && socket.current) {
       isTyping.current = false;
-      socket.current.emit('typing:stop', { roomId: selectedRoom, userId: userName });
+      socket.current.emit("typing:stop", { roomId: selectedRoom, userId: userName });
     }
   };
 
@@ -108,7 +108,7 @@ export default function GlobalChat() {
 
     if (currentTypingUsers.length === 0) return null;
 
-    let typingText = '';
+    let typingText = "";
     if (currentTypingUsers.length === 1) {
       typingText = `${currentTypingUsers[0]} is typing...`;
     } else if (currentTypingUsers.length === 2) {
@@ -122,8 +122,8 @@ export default function GlobalChat() {
         {typingText}
         <span className="inline-flex ml-1">
           <span className="animate-bounce">.</span>
-          <span className="animate-bounce" style={{ animationDelay: '0.1s' }}>.</span>
-          <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
+          <span className="animate-bounce" style={{ animationDelay: "0.1s" }}>.</span>
+          <span className="animate-bounce" style={{ animationDelay: "0.2s" }}>.</span>
         </span>
       </div>
     );
@@ -133,21 +133,21 @@ export default function GlobalChat() {
     if (messagesContainerRef.current && shouldScroll.current) {
       messagesContainerRef.current.scrollTo({
         top: messagesContainerRef.current.scrollHeight,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
   }, [messages, typingUsers]);
 
   const onInputFocus = () => {
-    document.title = 'Nothing New';
+    document.title = "Nothing New";
     isInputFocus.current = true
-    console.log('input is focused')
+    console.log("input is focused")
     setNumOfUnreadMessages(0)
   }
 
   const onInputBlur = () => {
     isInputFocus.current = false
-    console.log('input is not focused')
+    console.log("input is not focused")
     stopTyping(); // Stop typing when input loses focus
   }
 
@@ -160,22 +160,22 @@ export default function GlobalChat() {
   }, [numOfUnreadMessages])
 
   useEffect(() => {
-    const storedUserName = localStorage.getItem('userName');
-    setUserName(storedUserName ?? '')
-    console.log('API URL: ', apiUrl)
-    console.log('User platform: ', navigator.userAgent)
+    const storedUserName = localStorage.getItem("userName");
+    setUserName(storedUserName ?? "")
+    console.log("API URL: ", apiUrl)
+    console.log("User platform: ", navigator.userAgent)
     if (!apiUrl) {
       return;
     }
-    socket.current = io(apiUrl, { auth: { token: localStorage.getItem('authToken') } });
-    socket.current.on('connect', () => {
-      console.log('Connected to Socket.IO server');
+    socket.current = io(apiUrl, { auth: { token: localStorage.getItem("authToken") } });
+    socket.current.on("connect", () => {
+      console.log("Connected to Socket.IO server");
       // TODO - handle reconnection attempts and failures
       // Need to join and leave room in a separate useEffect
-      socket.current?.emit('join:room', { roomId: selectedRoom, userId: storedUserName });
+      socket.current?.emit("join:room", { roomId: selectedRoom, userId: storedUserName });
     })
 
-    socket.current.on('message', (data: WebsocketServerResponse) => {
+    socket.current.on("message", (data: WebsocketServerResponse) => {
       if (data.message) {
         setMessages((prevMessages) => [...prevMessages, { ...data.message! }])
         sendNotification(data)
@@ -183,7 +183,7 @@ export default function GlobalChat() {
     })
 
     // Typing indicator event listeners
-    socket.current.on('typing:start', (data: { userId: string; roomId: string }) => {
+    socket.current.on("typing:start", (data: { userId: string; roomId: string }) => {
       setTypingUsers(prev => {
         const exists = prev.find(user => user.userId === data.userId && user.roomId === data.roomId);
         if (exists) return prev;
@@ -191,26 +191,26 @@ export default function GlobalChat() {
       });
     });
 
-    socket.current.on('typing:stop', (data: { userId: string; roomId: string }) => {
+    socket.current.on("typing:stop", (data: { userId: string; roomId: string }) => {
       setTypingUsers(prev =>
         prev.filter(user => !(user.userId === data.userId && user.roomId === data.roomId))
       );
     });
 
-    socket.current.on('error', (err: WebsocketServerResponse) => {
-      console.error('Error from server: ', err)
+    socket.current.on("error", (err: WebsocketServerResponse) => {
+      console.error("Error from server: ", err)
     })
 
-    socket.current.on('disconnect', (reason) => {
-      console.error('Disconnected from server for the following reason: ', reason)
-      setMessages((prevMessages) => [{ message: 'Disconnected for the following reason: ' + reason, userId: 'System' }, ...prevMessages])
+    socket.current.on("disconnect", (reason) => {
+      console.error("Disconnected from server for the following reason: ", reason)
+      setMessages((prevMessages) => [{ message: "Disconnected for the following reason: " + reason, userId: "System" }, ...prevMessages])
       // Clear typing indicators on disconnect
       setTypingUsers([]);
     })
 
     // get messages
     const data = async () => {
-      const headers = await fetchData('/globalmessages')
+      const headers = await fetchData("/globalmessages")
       let messages: Message[] = []
       if (headers.status === 200) {
         messages = await headers.json()
@@ -250,10 +250,10 @@ export default function GlobalChat() {
       roomId: selectedRoom,
     } as Message & { roomId?: string };
     setMessages((prev) => [...prev, messageObject]);
-    setUserInput('');
+    setUserInput("");
     shouldScroll.current = true;
     // optimistic emit; backend will be wired later
-    socket.current?.emit('message', messageObject);
+    socket.current?.emit("message", messageObject);
   }
 
   const handleMessageScrolling = () => {
@@ -262,7 +262,7 @@ export default function GlobalChat() {
     // If the user is within 100px of the bottom, consider it "at the bottom"
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
     shouldScroll.current = isAtBottom;
-    console.log('User is at bottom:', isAtBottom);
+    console.log("User is at bottom:", isAtBottom);
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -287,8 +287,8 @@ export default function GlobalChat() {
 
     // Auto-resize
     const textarea = e.target
-    textarea.style.height = 'auto'
-    textarea.style.height = textarea.scrollHeight + 'px'
+    textarea.style.height = "auto"
+    textarea.style.height = textarea.scrollHeight + "px"
   }
 
   function handleKeyDownEvent(event: React.KeyboardEvent<HTMLTextAreaElement>): void {
@@ -296,14 +296,14 @@ export default function GlobalChat() {
     onInputFocus();
 
     // Send message on Enter (without Shift) on desktop. Allow Shift+Enter to insert a newline on desktop.
-    if (!isMobile && event.key === 'Enter' && !event.shiftKey) {
+    if (!isMobile && event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       handleSendMessage();
       return;
     }
 
     // Allow Escape to blur the textarea (exit input mode)
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       (event.target as HTMLTextAreaElement).blur();
       onInputBlur();
     }
