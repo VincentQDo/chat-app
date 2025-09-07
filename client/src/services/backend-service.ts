@@ -8,10 +8,10 @@ export function getBackendBaseUrl() {
 
 export function fetchData(url: string, options?: RequestInit): Promise<Response> {
     return fetch(`${getBackendBaseUrl()}${url}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
         },
         ...options
     })
