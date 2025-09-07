@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { auth, validateToken } from "@/services/firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
@@ -28,40 +28,40 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     const authStateObs = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // signed in
-        console.log('Auth state changed, user info: ', user)
-        const newToken = await auth.currentUser?.getIdToken(true) ?? ''
-        console.log('Fetching another token: ', newToken)
-        localStorage.setItem('authToken', newToken)
-        const authRes = await validateToken(localStorage.getItem('authToken'))
-        console.log('validate token result: ', authRes)
+        console.log("Auth state changed, user info: ", user)
+        const newToken = await auth.currentUser?.getIdToken(true) ?? ""
+        console.log("Fetching another token: ", newToken)
+        localStorage.setItem("authToken", newToken)
+        const authRes = await validateToken(localStorage.getItem("authToken"))
+        console.log("validate token result: ", authRes)
         if (authRes.error === null) {
-          console.log('Token authenticated', authRes.user)
+          console.log("Token authenticated", authRes.user)
           setUser(authRes.user)
         } else {
           // Token expired or something went wrong while authenticating
-          console.log('Something went wrong while validating token')
-          localStorage.removeItem('authToken')
-          router.push('/signin')
+          console.log("Something went wrong while validating token")
+          localStorage.removeItem("authToken")
+          router.push("/signin")
         }
       } else {
         // signed out
-        console.log('signed out')
-        localStorage.removeItem('authToken')
-        localStorage.removeItem('userName')
-        router.push('/signin')
+        console.log("signed out")
+        localStorage.removeItem("authToken")
+        localStorage.removeItem("userName")
+        router.push("/signin")
       }
       setIsLoading(false)
     })
     return () => {
-      console.log('after auth state change')
+      console.log("after auth state change")
       authStateObs()
     }
   }, [router]);
 
   const logOut = async () => {
     await signOut(auth)
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('userName')
+    localStorage.removeItem("authToken")
+    localStorage.removeItem("userName")
   }
 
 

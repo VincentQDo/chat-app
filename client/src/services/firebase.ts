@@ -49,17 +49,17 @@ export const signUp = async (email: string, password: string, username: string):
 }
 
 export async function validateToken(token: string | null): Promise<AuthResult> {
-    if (token == null) return { error: 'wtf where is the auth token?', user: null };
+    if (token == null) return { error: "wtf where is the auth token?", user: null };
     try {
-        const response = await fetchData('/authenticate');
-        console.log('Authenticate res: ', response)
+        const response = await fetchData("/authenticate");
+        console.log("Authenticate res: ", response)
         if (response.status === 200) {
             return { error: null, user: auth.currentUser }
         } else {
             return { error: response.statusText, user: null }
         }
     } catch (error: any) {
-        console.error('Soem kind of error during auth: ', error);
+        console.error("Soem kind of error during auth: ", error);
         return { error: error, user: null };
     }
 }

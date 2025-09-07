@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from "react";
 
 type CompactContextType = {
   isCompact: boolean;
@@ -16,10 +16,10 @@ export function CompactProvider({
   initialValue?: boolean;
 }) {
   const [isCompact, setIsCompact] = useState<boolean>(() => {
-    const stored = localStorage.getItem('isCompact');
+    const stored = localStorage.getItem("isCompact");
     if (stored) {
       try {
-        console.log('Retrieved isCompact from localStorage:', stored);
+        console.log("Retrieved isCompact from localStorage:", stored);
         return JSON.parse(stored);
       } catch (e) {
         return false;
@@ -30,7 +30,7 @@ export function CompactProvider({
 
   // Save to storage whenever isCompact changes
   useEffect(() => {
-    localStorage.setItem('isCompact', JSON.stringify(isCompact));
+    localStorage.setItem("isCompact", JSON.stringify(isCompact));
   }, [isCompact]);
 
   // Toggle function for convenience
@@ -54,7 +54,7 @@ export function CompactProvider({
 export function useCompact() {
   const context = useContext(CompactContext);
   if (context === undefined) {
-    throw new Error('useCompact must be used within a CompactProvider');
+    throw new Error("useCompact must be used within a CompactProvider");
   }
   return context;
 }

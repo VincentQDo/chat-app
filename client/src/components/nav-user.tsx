@@ -40,8 +40,8 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user?.displayName ?? 'N/A'}</span>
-                <span className="truncate text-xs">{user?.email ?? 'N/A'}</span>
+                <span className="truncate font-medium">{user?.displayName ?? "N/A"}</span>
+                <span className="truncate text-xs">{user?.email ?? "N/A"}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -55,8 +55,8 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex flex-col gap-4 px-1 py-1.5 text-left text-sm">
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user?.displayName ?? 'N/A'}</span>
-                  <span className="truncate text-xs">{user?.email ?? 'N/A'}</span>
+                  <span className="truncate font-medium">{user?.displayName ?? "N/A"}</span>
+                  <span className="truncate text-xs">{user?.email ?? "N/A"}</span>
                 </div>
                 <div className='flex items-center space-x-2'>
                   <Label htmlFor="compact-mode">Compact Mode</Label>
