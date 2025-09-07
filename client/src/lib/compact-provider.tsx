@@ -10,10 +10,8 @@ const CompactContext = createContext<CompactContextType | undefined>(undefined);
 
 export function CompactProvider({
   children,
-  initialValue = false
 }: {
   children: ReactNode;
-  initialValue?: boolean;
 }) {
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     const stored = localStorage.getItem("isCompact");

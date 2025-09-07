@@ -228,14 +228,6 @@ io.on("connection", (socket) => {
       // Broadcast to specific room if roomId is provided
       if (roomId) {
         socket.to(roomId).emit("message", jsonData);
-
-        // For global chat, also broadcast to all (backward compatibility)
-        if (roomId === 'global') {
-          socket.broadcast.emit("message", jsonData);
-        }
-      } else {
-        // Fallback to broadcasting to all
-        socket.broadcast.emit("message", jsonData);
       }
     }
   });
