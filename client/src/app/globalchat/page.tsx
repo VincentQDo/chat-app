@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, FormEvent, useLayoutEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { fetchData, getBackendBaseUrl } from "@/services/backend-service";
 import AppSidebar from '@/components/app-sidebar';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import AppMessage from '@/components/app-message';
@@ -36,7 +36,7 @@ export default function GlobalChat() {
   const socket = useRef<Socket | null>(null);
   const isMobile = useIsMobile();
   const shouldScroll = useRef(true);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<number | null>(null);
   const isTyping = useRef(false);
   const { isCompact } = useCompact();
 
@@ -90,9 +90,11 @@ export default function GlobalChat() {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    typingTimeoutRef.current = setTimeout(() => {
+    // Using window.setTimeout to get a number type instead of NodeJS.Timeout
+    // because we're in a dual environment (browser + Node)
+    typingTimeoutRef.current = window.setTimeout(() => {
       stopTyping();
-    }, 1000); // Stop typing indicator after 1 second of inactivity
+    }, 3000); // Stop typing indicator after 3 seconds of inactivity
   };
 
   const getCurrentRoomTypingUsers = () => {
@@ -136,10 +138,6 @@ export default function GlobalChat() {
     }
   }, [messages, typingUsers]);
 
-  useEffect(() => {
-    console.log('input focus is changeing ', isInputFocus)
-  }, [isInputFocus])
-
   const onInputFocus = () => {
     document.title = 'Nothing New';
     isInputFocus.current = true
@@ -172,6 +170,8 @@ export default function GlobalChat() {
     socket.current = io(apiUrl, { auth: { token: localStorage.getItem('authToken') } });
     socket.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
+      // TODO - handle reconnection attempts and failures
+      // Need to join and leave room in a separate useEffect
       socket.current?.emit('join:room', { roomId: selectedRoom, userId: storedUserName });
     })
 
@@ -249,7 +249,7 @@ export default function GlobalChat() {
       createdAt: Date.now(),
       roomId: selectedRoom,
     } as Message & { roomId?: string };
-    setMessages([...messages, messageObject]);
+    setMessages((prev) => [...prev, messageObject]);
     setUserInput('');
     shouldScroll.current = true;
     // optimistic emit; backend will be wired later
@@ -326,7 +326,7 @@ export default function GlobalChat() {
           {isCompact ?
             messages.map((msg, index) => (
               <AppMessage
-                key={msg.userId + msg.createdAt}
+                key={index}
                 message={msg.message}
                 date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
                 isMine={msg.userId === userName}
@@ -336,7 +336,7 @@ export default function GlobalChat() {
             )) :
             messages.map((msg, index) => (
               <AppMessageLarge
-                key={msg.userId + msg.createdAt}
+                key={index}
                 message={msg.message}
                 date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
                 isMine={msg.userId === userName}
