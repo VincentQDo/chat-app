@@ -134,7 +134,7 @@ export default function GlobalChat() {
         behavior: 'smooth',
       });
     }
-  }, [messages, typingUsers]); // Also scroll when typing users change
+  }, [messages]);
 
   useEffect(() => {
     console.log('input focus is changeing ', isInputFocus)
@@ -324,7 +324,7 @@ export default function GlobalChat() {
           {isCompact ?
             messages.map((msg, index) => (
               <AppMessage
-                key={index}
+                key={msg.userId + msg.createdAt}
                 message={msg.message}
                 date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
                 isMine={msg.userId === userName}
@@ -334,7 +334,7 @@ export default function GlobalChat() {
             )) :
             messages.map((msg, index) => (
               <AppMessageLarge
-                key={index}
+                key={msg.userId + msg.createdAt}
                 message={msg.message}
                 date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
                 isMine={msg.userId === userName}

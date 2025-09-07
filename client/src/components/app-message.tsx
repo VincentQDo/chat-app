@@ -18,35 +18,8 @@ export default function AppMessage({
   const dateString = typeof date === "string" ? date : date.toLocaleString()
   const { user } = useAuth() // later for username and avatar
 
-  // Generate consistent color based on userId/senderId
-  const getUserColor = (id: string, isCurrentUser: boolean) => {
-    if (isCurrentUser) return "text-blue-400"; // Your messages get a distinct blue
-
-    // Color palette similar to Discord/Mattermost
-    const colors = [
-      "text-red-400", "text-orange-400", "text-amber-400", "text-yellow-400",
-      "text-lime-400", "text-green-400", "text-emerald-400", "text-teal-400",
-      "text-cyan-400", "text-sky-400", "text-indigo-400", "text-violet-400",
-      "text-purple-400", "text-fuchsia-400", "text-pink-400", "text-rose-400"
-    ];
-
-    // Simple hash function to get consistent color
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-      hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-
-  const getAvatarColor = (id: string, isCurrentUser: boolean) => {
-    if (isCurrentUser) return "bg-blue-500";
-
-    const colors = [
-      "bg-red-500", "bg-orange-500", "bg-amber-500", "bg-yellow-500",
-      "bg-lime-500", "bg-green-500", "bg-emerald-500", "bg-teal-500",
-      "bg-cyan-500", "bg-sky-500", "bg-indigo-500", "bg-violet-500",
-      "bg-purple-500", "bg-fuchsia-500", "bg-pink-500", "bg-rose-500"
-    ];
+  const getRandomColor = (id: string, isCurrentUser: boolean, myColor: string, colors: string[]) => {
+    if (isCurrentUser) return myColor;
 
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
@@ -60,8 +33,22 @@ export default function AppMessage({
   const messageUserId = isMine ? currentUserId : (senderId || senderName || "unknown");
   const displayName = isMine ? user?.displayName || "You" : (senderName || "Unknown User");
 
-  const userColor = getUserColor(messageUserId, isMine);
-  const avatarColor = getAvatarColor(messageUserId, isMine);
+  const avatarColors = [
+    "bg-red-500", "bg-orange-500", "bg-amber-500", "bg-yellow-500",
+    "bg-lime-500", "bg-green-500", "bg-emerald-500", "bg-teal-500",
+    "bg-cyan-500", "bg-sky-500", "bg-indigo-500", "bg-violet-500",
+    "bg-purple-500", "bg-fuchsia-500", "bg-pink-500", "bg-rose-500"
+  ];
+  const avatarColor = getRandomColor(messageUserId, isMine, "bg-blue-500", avatarColors);
+
+  const colors = [
+    "text-red-400", "text-orange-400", "text-amber-400", "text-yellow-400",
+    "text-lime-400", "text-green-400", "text-emerald-400", "text-teal-400",
+    "text-cyan-400", "text-sky-400", "text-indigo-400", "text-violet-400",
+    "text-purple-400", "text-fuchsia-400", "text-pink-400", "text-rose-400"
+  ];
+  const userColor = getRandomColor(messageUserId, isMine, "text-blue-400", colors);
+
 
   // Get first letter for avatar
   const avatarLetter = displayName[0]?.toUpperCase() || "U";

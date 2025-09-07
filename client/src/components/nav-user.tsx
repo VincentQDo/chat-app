@@ -59,9 +59,8 @@ export function NavUser() {
                   <span className="truncate text-xs">{user?.email ?? 'N/A'}</span>
                 </div>
                 <div className='flex items-center space-x-2'>
-                  <Label htmlFor="compact-mode">Large</Label>
+                  <Label htmlFor="compact-mode">Compact Mode</Label>
                   <Switch checked={isCompact} onCheckedChange={setIsCompact} id="compact-mode" />
-                  <Label htmlFor="compact-mode">Compact</Label>
                 </div>
               </div>
             </DropdownMenuLabel>
