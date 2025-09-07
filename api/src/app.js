@@ -42,6 +42,7 @@ const io = new Server(server, {
 });
 
 // Store typing users in memory (in production, consider using Redis for scaling)
+/** @type {Map<string, Set<{socketId: string, userId: string}>>} */
 const typingUsers = new Map(); // Map<roomId, Set<{socketId, userId}>>
 
 // Helper function to clean up typing indicators for a socket
@@ -71,6 +72,11 @@ const addTypingUser = (roomId, socketId, userId) => {
   const users = typingUsers.get(roomId);
 
   // Check if user is already typing in this room
+  // TODO optimize this lookup, currently O(n) won't scale well with many users
+  // Consider using a Map for users instead of Set for O(1) lookups
+  // e.g., Map<userId, socketId>
+  // But that would require more changes in the data structure
+  // For now, we keep it simple
   const existingUser = Array.from(users).find(user => user.userId === userId);
   if (!existingUser) {
     users.add({ socketId, userId });
@@ -146,14 +152,6 @@ io.on("connection", (socket) => {
         userId: userId,
         roomId: roomId
       });
-
-      // For global chat (backward compatibility)
-      if (roomId === 'global') {
-        socket.broadcast.emit('typing:start', {
-          userId: userId,
-          roomId: roomId
-        });
-      }
     }
   });
 

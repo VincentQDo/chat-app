@@ -134,7 +134,7 @@ export default function GlobalChat() {
         behavior: 'smooth',
       });
     }
-  }, [messages]);
+  }, [messages, typingUsers]);
 
   useEffect(() => {
     console.log('input focus is changeing ', isInputFocus)
@@ -171,6 +171,7 @@ export default function GlobalChat() {
     socket.current = io(apiUrl, { auth: { token: localStorage.getItem('authToken') } });
     socket.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
+      socket.current?.emit('join:room', { roomId: selectedRoom, userId: userName });
     })
 
     socket.current.on('message', (data: WebsocketServerResponse) => {
