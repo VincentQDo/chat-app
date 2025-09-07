@@ -123,19 +123,19 @@ io.on("connection", (socket) => {
   });
 
   // Handle joining rooms (for room-based typing indicators)
-  socket.on('join:room', (data) => {
-    const { roomId } = data;
+  socket.on('join:room', (/** @type {{ roomId: string, userId: string }} */ data) => {
+    const { roomId, userId } = data;
     socket.join(roomId);
-    console.info(`[INFO] Socket ${socket.id} joined room: ${roomId}`);
+    console.info(`[INFO] Socket ${socket.id} with userId ${userId} joined room: ${roomId}`);
   });
 
   // Handle leaving rooms
-  socket.on('leave:room', (data) => {
-    const { roomId } = data;
+  socket.on('leave:room', (/** @type {{ roomId: string, userId: string }} */ data) => {
+    const { roomId, userId } = data;
     socket.leave(roomId);
     // Clean up any typing indicators for this user in this room
     cleanupTypingForSocket(socket.id);
-    console.info(`[INFO] Socket ${socket.id} left room: ${roomId}`);
+    console.info(`[INFO] Socket ${socket.id} with userId ${userId} left room: ${roomId}`);
   });
 
   // Handle typing start

@@ -162,7 +162,8 @@ export default function GlobalChat() {
   }, [numOfUnreadMessages])
 
   useEffect(() => {
-    setUserName(localStorage.getItem('userName') ?? '')
+    const storedUserName = localStorage.getItem('userName');
+    setUserName(storedUserName ?? '')
     console.log('API URL: ', apiUrl)
     console.log('User platform: ', navigator.userAgent)
     if (!apiUrl) {
@@ -171,7 +172,7 @@ export default function GlobalChat() {
     socket.current = io(apiUrl, { auth: { token: localStorage.getItem('authToken') } });
     socket.current.on('connect', () => {
       console.log('Connected to Socket.IO server');
-      socket.current?.emit('join:room', { roomId: selectedRoom, userId: userName });
+      socket.current?.emit('join:room', { roomId: selectedRoom, userId: storedUserName });
     })
 
     socket.current.on('message', (data: WebsocketServerResponse) => {
