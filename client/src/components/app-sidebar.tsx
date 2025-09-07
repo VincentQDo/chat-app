@@ -13,7 +13,7 @@ export default function AppSidebar() {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <span className="text-base font-semibold">Banterbox</span>
+                <span className="text-lg font-semibold">Banterbox</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -22,14 +22,6 @@ export default function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <PlusIcon size={16} />
-                  <span className="text-base">New Chats</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
             <SidebarGroup>
               <SidebarGroupLabel>Active Chats</SidebarGroupLabel>
               <SidebarGroupContent>
