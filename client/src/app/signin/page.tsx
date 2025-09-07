@@ -1,36 +1,36 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import Link from "next/link"
 
-import { authenticate } from '@/services/firebase';
+import { authenticate } from "@/services/firebase";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from 'react';
-import { AuthError } from 'firebase/auth';
+import { useState } from "react";
+import { AuthError } from "firebase/auth";
 
 export default function Login() {
     const router = useRouter();
-    const [authError, setAuthError] = useState('')
+    const [authError, setAuthError] = useState("")
 
     const submitHandler = async (formData: FormData) => {
-        const [email, password] = [formData.get('email')?.toString(), formData.get('password')?.toString()];
+        const [email, password] = [formData.get("email")?.toString(), formData.get("password")?.toString()];
         if (email && password) {
             const res = await authenticate(email, password);
             if (res.user) {
                 if (res.user.displayName) {
                     const authToken = await res.user.getIdToken();
-                    localStorage.setItem('authToken', authToken);
-                    localStorage.setItem('userName', res.user.displayName);
-                    router.push('/');
+                    localStorage.setItem("authToken", authToken);
+                    localStorage.setItem("userName", res.user.displayName);
+                    router.push("/");
                 } else {
-                    console.log('Log out user')
-                    localStorage.removeItem('authToken')
-                    localStorage.removeItem('userName')
+                    console.log("Log out user")
+                    localStorage.removeItem("authToken")
+                    localStorage.removeItem("userName")
                 }
             } else if (res.error) {
-                setAuthError((res.error as AuthError).message.split('Firebase: ')[1]);
+                setAuthError((res.error as AuthError).message.split("Firebase: ")[1]);
             }
         }
     }

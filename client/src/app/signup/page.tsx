@@ -1,28 +1,28 @@
-'use client'
+"use client"
 
-import { signUp } from '@/services/firebase'
+import { signUp } from "@/services/firebase"
 
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from 'react'
-import { AuthError } from 'firebase/auth'
-import { useRouter } from 'next/navigation'
+import { useState } from "react"
+import { AuthError } from "firebase/auth"
+import { useRouter } from "next/navigation"
 
 export default function SignUp() {
     const router = useRouter();
-    const [authError, setAuthError] = useState('');
+    const [authError, setAuthError] = useState("");
     const submitHandler = async (formData: FormData) => {
-        const [email, password, username] = [formData.get('email')?.toString(), formData.get('password')?.toString(), formData.get('username')?.toString()]
+        const [email, password, username] = [formData.get("email")?.toString(), formData.get("password")?.toString(), formData.get("username")?.toString()]
         if (email && password && username) {
             const res = await signUp(email, password, username)
             if (res.error) {
-                setAuthError((res.error as AuthError).message.split('Firebase: ')[1]);
+                setAuthError((res.error as AuthError).message.split("Firebase: ")[1]);
             } else {
                 console.log(res.user)
-                router.push('/signin')
+                router.push("/signin")
             }
         }
     }
