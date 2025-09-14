@@ -5,9 +5,12 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "test": "test",
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "migrate": "node scripts/migrate.js",
+    "migrate:create": "node scripts/migrate.js create",
+    "migrate:status": "node scripts/migrate.js status",
+    "db:reset": "rm -f data/data.db && npm run migrate",
+    "start": "npm run migrate && node app.js",
+    "dev": "npm run migrate && nodemon app.js"
   },
   "author": "",
   "license": "ISC",
