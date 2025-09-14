@@ -3,76 +3,39 @@
 import fs from "fs";
 import sqlite from "sqlite3";
 import path from "path";
+import { MigrationManager } from "./migration-manager";
 
 const DATA_DIR = process.env.DB_DIR || path.resolve(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "data.db");
 
+// Ensure data directory exists
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+// Create database connection
 const db = new sqlite.Database(DB_FILE, (err) => {
-  console.log("Trying to access the database at ", DB_FILE);
-  if (err) console.error("DB connection error", err.message);
-  else console.log("DB connection established");
+  console.log("Trying to access the database at", DB_FILE);
+  if (err) {
+    console.error("❌ DB connection error:", err.message);
+    process.exit(1);
+  } else {
+    console.log("✅ DB connection established");
+  }
 });
 
-db.serialize(() => {
-  console.log("Configuring Database");
-  db.run(
-    `
-		CREATE TABLE IF NOT EXISTS users (
-			userId TEXT PRIMARY KEY,
-			userName TEXT
-		)
-	`,
-    (err) => {
-      if (err) console.error("Failed to create users table", err.message);
-    },
-  );
-  db.run(
-    `
-		CREATE TABLE IF NOT EXISTS messages (
-			messageid INTEGER PRIMARY KEY AUTOINCREMENT,
-			userId TEXT,
-			message TEXT,
-			createdAt INTEGER,
-			updatedAt INTEGER,
-			status TEXT DEFAULT 'pending',
-			chatId TEXT DEFAULT 'global',
-			FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
-		)
-	`,
-    (err) => {
-      if (err) console.error("failed to create messages table", err.message);
-    },
-  );
-  db.run(
-    `
-		CREATE TABLE IF NOT EXISTS relationships (
-			userid1 TEXT,
-			userid2 TEXT,
-			status TEXT DEFAULT 'pending',
-			createdAt INTEGER,
-			updatedAt INTEGER,
-			PRIMARY KEY (userid1, userid2),
-			FOREIGN KEY (userid1) REFERENCES users(userId) ON DELETE CASCADE,
-			FOREIGN KEY (userid2) REFERENCES users(userId) ON DELETE CASCADE
-		)
-	`,
-    (err) => {
-      if (err)
-        console.error("failed to create relationships table", err.message);
-    },
-  );
-  db.run("CREATE INDEX IF NOT EXISTS idx_userId ON messages(userId)", (err) => {
-    if (err) console.error("Failed to create index", err.message);
-  });
-  db.run(
-    "CREATE INDEX IF NOT EXISTS idx_createdAt ON messages(createdAt)",
-    (err) => {
-      if (err) console.error("Failed to create createdAt index", err.message);
-    },
-  );
-});
+// Initialize database with migrations
+async function initializeDatabase() {
+  const migrationManager = new MigrationManager(db);
+
+  try {
+    await migrationManager.runMigrations();
+  } catch (error) {
+    console.error("❌ Database initialization failed:", error);
+    process.exit(1);
+  }
+}
+
+// Run initialization
+initializeDatabase();
 
 /**
  * @param {Message} content
@@ -84,10 +47,12 @@ export function addMessage(content) {
   if (!status) status = "pending";
   if (!chatId) chatId = "global";
   let [createdAt, updatedAt] = [Date.now(), Date.now()];
+
   const sql = `
-		INSERT INTO messages(userId, message, status, chatId, createdAt, updatedAt)
-		VALUES(?, ?, ?, ?, ?, ?)
-	`;
+    INSERT INTO messages(userId, message, status, chatId, createdAt, updatedAt)
+    VALUES(?, ?, ?, ?, ?, ?)
+  `;
+
   console.info("Inserting message into database", {
     userId,
     message,
@@ -96,6 +61,7 @@ export function addMessage(content) {
     createdAt,
     updatedAt,
   });
+
   return new Promise((resolve) => {
     db.run(
       sql,
@@ -141,11 +107,13 @@ export function getAllMessages(limit, offset) {
   let lim = Number.isSafeInteger(limit) ? Number(limit) : 100;
   lim = Math.min(lim, 200);
   const off = Number.isSafeInteger(offset) ? offset : 0;
+
   console.log(
-    "Fetching messages with the following limit and offset: ",
+    "Fetching messages with the following limit and offset:",
     lim,
     off,
   );
+
   return new Promise((resolve, reject) => {
     db.all(
       "SELECT * FROM messages ORDER BY createdAt DESC LIMIT ? OFFSET ?",
@@ -155,7 +123,7 @@ export function getAllMessages(limit, offset) {
           console.error(err);
           reject(err);
         } else {
-          console.log("Fetch result: ", rows);
+          console.log("Fetch result:", rows);
           resolve(rows);
         }
       },
@@ -194,6 +162,7 @@ export function getMessagesAfterId(startId, limit) {
   const start = Number(startId) || 0;
   let lim = Number.isSafeInteger(limit) ? limit : 1;
   lim = Math.min(lim, 200);
+
   return new Promise((resolve, reject) => {
     db.all(
       "SELECT * FROM messages WHERE messageid > ? ORDER BY messageid ASC LIMIT ?",
@@ -231,13 +200,14 @@ export function searchMessages(q, limit, offset) {
   lim = Math.min(lim, 200);
   const off = Number.isSafeInteger(offset) ? offset : 0;
   const like = "%" + escapeLike(q) + "%";
+
   return new Promise((resolve, reject) => {
     db.all(
       `SELECT * FROM messages
-			 WHERE message LIKE ? ESCAPE '\\'
-			 COLLATE NOCASE
-			 ORDER BY createdAt DESC
-			 LIMIT ? OFFSET ?`,
+       WHERE message LIKE ? ESCAPE '\\'
+       COLLATE NOCASE
+       ORDER BY createdAt DESC
+       LIMIT ? OFFSET ?`,
       [like, lim, off],
       (err, rows) => {
         if (err) {
@@ -251,4 +221,6 @@ export function searchMessages(q, limit, offset) {
   });
 }
 
+// Export the MigrationManager for CLI usage
+export { MigrationManager };
 export default db;
