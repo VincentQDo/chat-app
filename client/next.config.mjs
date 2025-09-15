@@ -4,7 +4,17 @@ const nextConfig = {
     return [
       {
         source: "/",
-        destination: "/globalchat",
+        destination: "/chat/global",
+        permanent: true,
+      },
+      {
+        source: "/globalchat",
+        destination: "/chat/global",
+        permanent: true,
+      },
+      {
+        source: "/chat",
+        destination: "/chat/global",
         permanent: true,
       },
     ];
