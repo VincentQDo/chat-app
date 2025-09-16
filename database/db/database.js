@@ -41,37 +41,47 @@ initializeDatabase();
  * @param {Message} content
  * @returns {Promise<number>} 1 if success 0 if fail
  * */
-export function addMessage(content) {
-  let { userId, message, status, chatId } = content;
+/**
+ * Insert a message into the new messages schema.
+ * Accepts payloads produced by the API (compatible fields: message, userId, chatId/roomId, contentType, createdAt)
+ * @param {Object} payload
+ * @returns {Promise<number>} 1 on success, 0 on failure
+ */
+export function addMessage(payload) {
+  const incomingMessage = payload.message ?? payload.content ?? "";
+  const userId = payload.userId || null;
+  // allow either chatId (old) or roomId (new client)
+  const roomId = payload.roomId || null;
+  const contentType = payload.contentType || "text";
+  const createdAt = Number(payload.createdAt) || Date.now();
+  const editedAt = payload.editedAt ? Number(payload.editedAt) : null;
+  const isDeleted = payload.isDeleted ? 1 : 0;
 
-  if (!status) status = "pending";
-  if (!chatId) chatId = "global";
-  let [createdAt, updatedAt] = [Date.now(), Date.now()];
+  if (!userId) {
+    console.error("Missing userId when inserting message");
+    return Promise.resolve(0);
+  }
+
+  // generate a simple unique id if not provided
+  const messageId = payload.messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
   const sql = `
-    INSERT INTO messages(userId, message, status, chatId, createdAt, updatedAt)
-    VALUES(?, ?, ?, ?, ?, ?)
+    INSERT INTO messages(messageId, roomId, userId, content, contentType, createdAt, editedAt, isDeleted)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  console.info("Inserting message into database", {
-    userId,
-    message,
-    status,
-    chatId,
-    createdAt,
-    updatedAt,
-  });
+  console.info("Inserting message into database", { messageId, userId, roomId, createdAt });
 
   return new Promise((resolve) => {
     db.run(
       sql,
-      [userId, message, status, chatId, createdAt, updatedAt],
+      [messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted],
       (err) => {
         if (err) {
-          console.error(err);
+          console.error("DB insert error:", err.message);
           resolve(0);
         } else {
-          console.log("Message inserted");
+          console.log("Message inserted", messageId);
           resolve(1);
         }
       },
@@ -84,7 +94,7 @@ export function addMessage(content) {
  * @returns {Promise<number>} 1 if success 0 if fail
  * */
 export function deleteMessage(messageId) {
-  const sql = `DELETE FROM messages WHERE messageid = ?`;
+  const sql = `DELETE FROM messages WHERE messageId = ?`;
   return new Promise((resolve, reject) => {
     db.run(sql, [messageId], function (err) {
       if (err) {
@@ -103,7 +113,7 @@ export function deleteMessage(messageId) {
  * @param {any} [offset] Default to 0 if not provided
  * @returns {Promise<Message[]>} Promise of messages object array
  * */
-export function getAllMessages(limit, offset) {
+export function getAllMessages(limit = 100, offset = 0, roomId = null) {
   let lim = Number.isSafeInteger(limit) ? Number(limit) : 100;
   lim = Math.min(lim, 200);
   const off = Number.isSafeInteger(offset) ? offset : 0;
@@ -115,19 +125,23 @@ export function getAllMessages(limit, offset) {
   );
 
   return new Promise((resolve, reject) => {
-    db.all(
-      "SELECT * FROM messages ORDER BY createdAt DESC LIMIT ? OFFSET ?",
-      [lim, off],
-      (err, rows) => {
-        if (err) {
-          console.error(err);
-          reject(err);
-        } else {
-          console.log("Fetch result:", rows);
-          resolve(rows);
-        }
-      },
-    );
+    const params = [];
+    let sql = "SELECT * FROM messages";
+    if (roomId) {
+      sql += " WHERE roomId = ?";
+      params.push(roomId);
+    }
+    sql += " ORDER BY createdAt DESC LIMIT ? OFFSET ?";
+    params.push(lim, off);
+
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
   });
 }
 
@@ -137,45 +151,14 @@ export function getAllMessages(limit, offset) {
  */
 export function getMessageById(messageId) {
   return new Promise((resolve, reject) => {
-    db.get(
-      "SELECT * FROM messages WHERE messageid = ?",
-      [messageId],
-      (err, row) => {
-        if (err) {
-          console.error(err);
-          reject(err);
-        } else {
-          resolve(row ?? null);
-        }
-      },
-    );
-  });
-}
-
-/**
- * Cursor pagination: rows with messageid > startId
- * @param {string|number} startId
- * @param {number} [limit]
- * @returns {Promise<Message[]>}
- */
-export function getMessagesAfterId(startId, limit) {
-  const start = Number(startId) || 0;
-  let lim = Number.isSafeInteger(limit) ? limit : 1;
-  lim = Math.min(lim, 200);
-
-  return new Promise((resolve, reject) => {
-    db.all(
-      "SELECT * FROM messages WHERE messageid > ? ORDER BY messageid ASC LIMIT ?",
-      [start, lim],
-      (err, rows) => {
-        if (err) {
-          console.error(err);
-          reject(err);
-        } else {
-          resolve(rows);
-        }
-      },
-    );
+    db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (err, row) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      } else {
+        resolve(row ?? null);
+      }
+    });
   });
 }
 
@@ -204,7 +187,7 @@ export function searchMessages(q, limit, offset) {
   return new Promise((resolve, reject) => {
     db.all(
       `SELECT * FROM messages
-       WHERE message LIKE ? ESCAPE '\\'
+       WHERE content LIKE ? ESCAPE '\\'
        COLLATE NOCASE
        ORDER BY createdAt DESC
        LIMIT ? OFFSET ?`,
@@ -218,6 +201,43 @@ export function searchMessages(q, limit, offset) {
         }
       },
     );
+  });
+}
+
+/**
+ * Create a room (simple helper)
+ * @param {string} roomId
+ * @param {string} name
+ * @param {string} createdBy
+ */
+export function addRoom(roomId, name, createdBy) {
+  const createdAt = Date.now();
+  const updatedAt = createdAt;
+  const sql = `INSERT INTO rooms(roomId, name, createdBy, createdAt, updatedAt) VALUES(?, ?, ?, ?, ?)`;
+  return new Promise((resolve) => {
+    db.run(sql, [roomId, name, createdBy, createdAt, updatedAt], (err) => {
+      if (err) {
+        console.error(err);
+        resolve(0);
+      } else {
+        resolve(1);
+      }
+    });
+  });
+}
+
+export function addRoomMember(roomId, userId) {
+  const joinedAt = Date.now();
+  const sql = `INSERT OR IGNORE INTO room_members(roomId, userId, joinedAt) VALUES(?, ?, ?)`;
+  return new Promise((resolve) => {
+    db.run(sql, [roomId, userId, joinedAt], (err) => {
+      if (err) {
+        console.error(err);
+        resolve(0);
+      } else {
+        resolve(1);
+      }
+    });
   });
 }
 
