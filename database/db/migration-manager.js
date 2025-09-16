@@ -4,12 +4,13 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const MIGRATION_TRACKER_SQL_FILE_NAME = 'migration-tracker.sql';
 
 /**
  * Migration manager to handle database schema changes
  */
 export class MigrationManager {
-  constructor(db) {
+  constructor(/** @type {import('sqlite3').Database} */ db) {
     this.db = db;
     this.migrationsDir = path.join(__dirname, '../migrations');
   }
@@ -20,7 +21,7 @@ export class MigrationManager {
   async initialize() {
     return new Promise((resolve, reject) => {
       const trackerSql = fs.readFileSync(
-        path.join(this.migrationsDir, 'migration-tracker.sql'),
+        path.join(this.migrationsDir, MIGRATION_TRACKER_SQL_FILE_NAME),
         'utf8'
       );
 
