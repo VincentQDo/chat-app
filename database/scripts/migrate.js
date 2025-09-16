@@ -11,7 +11,7 @@
 import fs from "fs";
 import path from "path";
 import sqlite from "sqlite3";
-import { MigrationManager } from "../db/migration-manager";
+import { MigrationManager } from "../db/migration-manager.js";
 
 const DATA_DIR = process.env.DB_DIR || path.resolve(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "data.db");
