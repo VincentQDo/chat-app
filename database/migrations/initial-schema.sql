@@ -57,18 +57,18 @@ CREATE TABLE messages (
     CHECK(isDeleted IN (0, 1))
 );
 
-CREATE TABLE read_receipts (
-    roomId TEXT,
-    userId TEXT,
-    lastReadMessageId TEXT,
-    readAt INTEGER NOT NULL,
-    PRIMARY KEY (roomId, userId),
-    FOREIGN KEY (roomId) REFERENCES rooms(roomId) ON DELETE CASCADE,
+CREATE TABLE message_status (
+    messageId TEXT NOT NULL,
+    userId TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'sent',
+    updatedAt INTEGER NOT NULL,
+    PRIMARY KEY (messageId, userId),
+    FOREIGN KEY (messageId) REFERENCES messages(messageId) ON DELETE CASCADE,
     FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE,
-    FOREIGN KEY (lastReadMessageId) REFERENCES messages(messageId) ON DELETE SET NULL,
-    -- Additional constraints
-    CHECK(readAt > 0)
+    CHECK(updatedAt > 0),
+    CHECK(status IN ('sent','delivered','read'))
 );
+
 
 -- Auto-update updatedAt for users
 CREATE TRIGGER update_users_timestamp 
@@ -110,3 +110,12 @@ CREATE INDEX idx_users_last_seen ON users(lastSeen);
 
 -- Composite index for common query patterns
 CREATE INDEX idx_messages_room_sender ON messages(roomId, userId);
+
+-- Fast lookups of statuses per user (e.g., "show unread messages")
+CREATE INDEX idx_message_status_userId ON message_status(userId);
+
+-- Optional: for quickly fetching all statuses for a message
+CREATE INDEX idx_message_status_messageId ON message_status(messageId);
+
+-- Optional: if you query messages by room and creation time
+CREATE INDEX idx_messages_roomId_createdAt ON messages(roomId, createdAt);

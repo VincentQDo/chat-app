@@ -56,6 +56,7 @@ export function addMessage(payload) {
   const createdAt = Number(payload.createdAt) || Date.now();
   const editedAt = payload.editedAt ? Number(payload.editedAt) : null;
   const isDeleted = payload.isDeleted ? 1 : 0;
+  const status = payload.status || "sent"; // sent | delivered | read
 
   if (!userId) {
     console.error("Missing userId when inserting message");
@@ -66,8 +67,8 @@ export function addMessage(payload) {
   const messageId = payload.messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
   const sql = `
-    INSERT INTO messages(messageId, roomId, userId, content, contentType, createdAt, editedAt, isDeleted)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO messages(messageId, roomId, userId, content, contentType, createdAt, editedAt, isDeleted, status)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   console.info("Inserting message into database", { messageId, userId, roomId, createdAt });
@@ -75,7 +76,7 @@ export function addMessage(payload) {
   return new Promise((resolve) => {
     db.run(
       sql,
-      [messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted],
+      [messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted, status],
       (err) => {
         if (err) {
           console.error("DB insert error:", err.message);
