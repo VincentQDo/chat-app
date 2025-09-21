@@ -341,11 +341,7 @@ export default function GlobalChat() {
             messages.map((msg, index) => (
               <AppMessage
                 key={index}
-                content={msg.content}
-                date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
-                isMine={msg.userId === userName}
-                senderName={msg.userId}
-                senderId={msg.userId}
+                message={msg}
               />
             )) :
             messages.map((msg, index) => (
@@ -353,7 +349,6 @@ export default function GlobalChat() {
                 key={index}
                 content={msg.content}
                 date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
-                isMine={msg.userId === userName}
               />
             ))}
 
