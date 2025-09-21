@@ -347,8 +347,7 @@ export default function GlobalChat() {
             messages.map((msg, index) => (
               <AppMessageLarge
                 key={index}
-                content={msg.content}
-                date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
+                message={msg}
               />
             ))}
 

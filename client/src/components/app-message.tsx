@@ -17,7 +17,7 @@ export default function AppMessage(params: { message: Message }) {
   };
 
   // Determine the user ID and display name for color generation
-  const currentUserId = user?.uid || user?.email || "current-user";
+  const currentUserId = user?.displayName || user?.email || "current-user";
   const isMine = message.userId === currentUserId;
   const content = message.content || "";
   const messageUserId = isMine ? currentUserId : (message.userId || "unknown");
