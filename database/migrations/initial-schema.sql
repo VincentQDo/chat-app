@@ -89,9 +89,11 @@ BEGIN
 END;
 
 -- Membership enforcement (abort insert if sender is not a member of the room)
+-- Exempt the special 'global' room so system/global messages can be inserted without membership
 CREATE TRIGGER IF NOT EXISTS enforce_room_membership_before_insert_message
 BEFORE INSERT ON messages
 WHEN NEW.roomId IS NOT NULL
+  AND NEW.roomId != 'global'
   AND NOT EXISTS (
     SELECT 1 FROM room_members rm WHERE rm.roomId = NEW.roomId AND rm.userId = NEW.userId
   )

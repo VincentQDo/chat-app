@@ -1,5 +1,5 @@
 import express from "express";
-import { addMessage, deleteMessage, editMessage, getAllMessages } from "../db/database.js";
+import { addMessage, deleteMessage, editMessage, getAllMessages, insertOrUpdateMessageStatus } from "../db/database.js";
 
 const router = express.Router();
 
@@ -24,8 +24,20 @@ router.patch("/", async (req, res) => {
     return;
   }
   // If newContent is provided, update content; otherwise only update status
-  const data = await editMessage(messageId, newContent ?? undefined, status);
-  res.json(data);
+  if (typeof newContent === "string") {
+    const data = await editMessage(messageId, newContent);
+    res.json(data);
+  } else if (status) {
+    const userId = req.body.userId;
+    if (!userId) {
+      res.status(400).json({ error: "userId is required to set status" });
+      return;
+    }
+    const data = await insertOrUpdateMessageStatus(messageId, userId, status);
+    res.json(data);
+  } else {
+    res.status(400).json({ error: "nothing to update" });
+  }
 });
 
 router.delete("/", async (req, res) => {

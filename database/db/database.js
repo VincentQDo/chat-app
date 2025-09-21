@@ -72,34 +72,42 @@ export function addMessage(payload) {
   const messageId = payload.messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
   const sql = `
-    INSERT INTO messages(messageId, roomId, userId, content, contentType, createdAt, editedAt, isDeleted, status)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO messages(messageId, roomId, userId, content, contentType, createdAt, editedAt, isDeleted)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  console.info("Inserting message into database", { messageId, userId, roomId, createdAt });
+  console.info("Inserting message into database", { messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted });
 
   return new Promise((resolve) => {
-    db.run(
-      sql,
-      [messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted, status],
-      (err) => {
-        if (err) {
-          console.error("DB insert error:", err.message);
-          resolve(0);
-        } else {
-          console.log("Message inserted", messageId);
-          // Return the inserted row so callers (API) can broadcast with DB's canonical data
-          db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (getErr, row) => {
-            if (getErr) {
-              console.error("DB fetch after insert error:", getErr.message);
-              resolve(1);
-            } else {
-              resolve(row);
+    db.run(sql, [messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted], function (err) {
+      if (err) {
+        console.error("DB insert error:", err.message);
+        resolve(0);
+      } else {
+        console.log("Message inserted", messageId);
+        // Insert initial status row for the sender into message_status table
+        const updatedAt = Date.now();
+        const statusSql = `INSERT INTO message_status(messageId, userId, status, updatedAt)
+          VALUES(?, ?, ?, ?)
+          ON CONFLICT(messageId, userId) DO UPDATE SET status = excluded.status, updatedAt = excluded.updatedAt`;
+
+        db.run(statusSql, [messageId, userId, status, updatedAt], async (statusErr) => {
+          if (statusErr) {
+            console.error("DB insert status error:", statusErr.message);
+            resolve(0);
+          } else {
+            console.log(`Initial message status set for messageId ${messageId}, userId ${userId}`);
+            try {
+              const combined = await getMessageWithStatuses(messageId);
+              resolve(combined);
+            } catch (e) {
+              console.error(e);
+              resolve(0);
             }
-          });
-        }
-      },
-    );
+          }
+        });
+      }
+    });
   });
 }
 
@@ -152,15 +160,50 @@ export function getAllMessages(limit = 100, offset = 0, roomId = null) {
       if (err) {
         console.error(err);
         reject(err);
-      } else {
-        resolve(rows);
+        return;
       }
+
+      const msgs = rows || [];
+      if (msgs.length === 0) {
+        resolve([]);
+        return;
+      }
+
+      // Batch fetch all statuses for the returned messages in one query
+      const messageIds = msgs.map((r) => r.messageId);
+      const placeholders = messageIds.map(() => "?").join(",");
+      const statusSql = `SELECT messageId, userId, status, updatedAt FROM message_status WHERE messageId IN (${placeholders})`;
+
+      db.all(statusSql, messageIds, (statusErr, statusRows) => {
+        if (statusErr) {
+          console.error("Failed to fetch message statuses:", statusErr);
+          // Fallback: return raw message rows
+          resolve(msgs);
+          return;
+        }
+
+        // Group statuses by messageId
+        const statusMap = new Map();
+        for (const s of statusRows || []) {
+          if (!statusMap.has(s.messageId)) statusMap.set(s.messageId, []);
+          statusMap.get(s.messageId).push({ userId: s.userId, status: s.status, updatedAt: s.updatedAt });
+        }
+
+        // Combine
+        const combined = msgs.map((m) => {
+          const statuses = statusMap.get(m.messageId) || [];
+          const senderStatusRow = statuses.find((s) => s.userId === m.userId);
+          return { ...m, statuses, status: senderStatusRow ? senderStatusRow.status : null };
+        });
+
+        resolve(combined);
+      });
     });
   });
 }
 
 /**
- * @param {number} [messageId]
+ * @param {string} messageId
  * @returns {Promise<Message|null>}
  */
 export function getMessageById(messageId) {
@@ -173,6 +216,37 @@ export function getMessageById(messageId) {
         resolve(row ?? null);
       }
     });
+  });
+}
+
+/**
+ * Fetch a message and its associated message_status rows.
+ * Returns a combined object matching the canonical Message shape with an
+ * additional `statuses` array and a `status` field representing the sender's status.
+ * @param {string} messageId
+ * @returns {Promise<any|null>}
+ */
+export async function getMessageWithStatuses(messageId) {
+  const message = await getMessageById(messageId);
+  if (!message) return null;
+
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT userId, status, updatedAt FROM message_status WHERE messageId = ?`,
+      [messageId],
+      (err, rows) => {
+        if (err) {
+          console.error(err);
+          reject(err);
+        } else {
+          const statuses = (/** @type {{userId: string, status: string, updatedAt: number}[]} */ rows || []);
+          // determine sender status (status for the original userId)
+          const senderStatusRow = statuses.find((s) => s.userId === message.userId);
+          const combined = { ...message, statuses, status: senderStatusRow ? senderStatusRow.status : null };
+          resolve(combined);
+        }
+      },
+    );
   });
 }
 
@@ -219,93 +293,65 @@ export function searchMessages(q, limit, offset) {
 }
 
 /**
- * Create a room (simple helper)
- * @param {string} roomId
- * @param {string} name
- * @param {string} createdBy
- */
-export function addRoom(roomId, name, createdBy) {
-  const createdAt = Date.now();
-  const updatedAt = createdAt;
-  const sql = `INSERT INTO rooms(roomId, name, createdBy, createdAt, updatedAt) VALUES(?, ?, ?, ?, ?)`;
-  return new Promise((resolve) => {
-    db.run(sql, [roomId, name, createdBy, createdAt, updatedAt], (err) => {
-      if (err) {
-        console.error(err);
-        resolve(0);
-      } else {
-        resolve(1);
-      }
-    });
-  });
-}
-
-export function addRoomMember(roomId, userId) {
-  const joinedAt = Date.now();
-  const sql = `INSERT OR IGNORE INTO room_members(roomId, userId, joinedAt) VALUES(?, ?, ?)`;
-  return new Promise((resolve) => {
-    db.run(sql, [roomId, userId, joinedAt], (err) => {
-      if (err) {
-        console.error(err);
-        resolve(0);
-      } else {
-        resolve(1);
-      }
-    });
-  });
-}
-
-/**
  * Edit a message's content and update the editedAt timestamp.
  * @param {string} messageId
  * @param {string} newContent
  * @returns {Promise<number>} 1 if success, 0 if fail
  */
-export function editMessage(messageId, newContent, status = MESSAGE_STATUS.SENT) {
+export function editMessage(messageId, newContent) {
   const editedAt = Date.now();
   // If newContent is provided, update content and editedAt; otherwise only update status
   if (typeof newContent === "string") {
-    const sql = `UPDATE messages SET content = ?, editedAt = ?, status = ? WHERE messageId = ?`;
+    const sql = `UPDATE messages SET content = ?, editedAt = ? WHERE messageId = ?`;
     return new Promise((resolve) => {
-      db.run(sql, [newContent, editedAt, status, messageId], function (err) {
+      db.run(sql, [newContent, editedAt, messageId], function (err) {
         if (err) {
           console.error(err);
           resolve(0);
         } else {
           console.log(`Row(s) updated: ${this.changes}`);
-          // Return updated row
-          db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (getErr, row) => {
-            if (getErr) {
-              console.error(getErr);
-              resolve(1);
-            } else {
-              resolve(row);
-            }
-          });
-        }
-      });
-    });
-  } else {
-    const sql = `UPDATE messages SET status = ? WHERE messageId = ?`;
-    return new Promise((resolve) => {
-      db.run(sql, [status, messageId], function (err) {
-        if (err) {
-          console.error(err);
-          resolve(0);
-        } else {
-          console.log(`Row(s) updated (status): ${this.changes}`);
-          db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (getErr, row) => {
-            if (getErr) {
-              console.error(getErr);
-              resolve(1);
-            } else {
-              resolve(row);
-            }
-          });
+          // return the updated message with statuses
+          getMessageWithStatuses(messageId)
+            .then((combined) => resolve(combined))
+            .catch((e) => {
+              console.error(e);
+              resolve(0);
+            });
         }
       });
     });
   }
+}
+
+/**
+ * Insert or update the status of a message for a user.
+ * @param {string} messageId
+ * @param {string} userId
+ * @param {string} status One of MESSAGE_STATUS
+ * @returns {Promise<number>} 1 if success, 0 if fail
+ */
+export function insertOrUpdateMessageStatus(messageId, userId, status) {
+  const updatedAt = Date.now();
+  const sql = `INSERT INTO message_status(messageId, userId, status, updatedAt)
+    VALUES(?, ?, ?, ?)
+    ON CONFLICT(messageId, userId) DO UPDATE SET status = excluded.status, updatedAt = excluded.updatedAt`;
+  return new Promise((resolve) => {
+    db.run(sql, [messageId, userId, status, updatedAt], function (err) {
+      if (err) {
+        console.error(err);
+        resolve(0);
+      } else {
+        console.log(`Message status updated for messageId ${messageId}, userId ${userId}`);
+        // return the combined object for convenience
+        getMessageWithStatuses(messageId)
+          .then((combined) => resolve(combined))
+          .catch((e) => {
+            console.error(e);
+            resolve(0);
+          });
+      }
+    });
+  });
 }
 
 // Export the MigrationManager for CLI usage

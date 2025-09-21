@@ -245,14 +245,6 @@ io.on("connection", (socket) => {
       // Broadcast to specific room if roomId is provided
       if (roomId) {
         socket.to(roomId).emit("message", jsonData);
-        // Mark delivered (best-effort) using messageId returned from DB
-        if (dbMessage && dbMessage.messageId) {
-          await fetch(baseURL + "/messages", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messageId: dbMessage.messageId, newContent: dbMessage.content, status: MESSAGE_STATUS.DELIVERED }),
-          });
-        }
       }
     } else {
       console.error("[ERROR] Failed to store message in DB. Status:", response.status);
