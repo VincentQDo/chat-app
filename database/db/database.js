@@ -88,7 +88,15 @@ export function addMessage(payload) {
           resolve(0);
         } else {
           console.log("Message inserted", messageId);
-          resolve(1);
+          // Return the inserted row so callers (API) can broadcast with DB's canonical data
+          db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (getErr, row) => {
+            if (getErr) {
+              console.error("DB fetch after insert error:", getErr.message);
+              resolve(1);
+            } else {
+              resolve(row);
+            }
+          });
         }
       },
     );
@@ -255,18 +263,49 @@ export function addRoomMember(roomId, userId) {
  */
 export function editMessage(messageId, newContent, status = MESSAGE_STATUS.SENT) {
   const editedAt = Date.now();
-  const sql = `UPDATE messages SET content = ?, editedAt = ?, status = ? WHERE messageId = ?`;
-  return new Promise((resolve) => {
-    db.run(sql, [newContent, editedAt, status, messageId], function (err) {
-      if (err) {
-        console.error(err);
-        resolve(0);
-      } else {
-        console.log(`Row(s) updated: ${this.changes}`);
-        resolve(1);
-      }
+  // If newContent is provided, update content and editedAt; otherwise only update status
+  if (typeof newContent === "string") {
+    const sql = `UPDATE messages SET content = ?, editedAt = ?, status = ? WHERE messageId = ?`;
+    return new Promise((resolve) => {
+      db.run(sql, [newContent, editedAt, status, messageId], function (err) {
+        if (err) {
+          console.error(err);
+          resolve(0);
+        } else {
+          console.log(`Row(s) updated: ${this.changes}`);
+          // Return updated row
+          db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (getErr, row) => {
+            if (getErr) {
+              console.error(getErr);
+              resolve(1);
+            } else {
+              resolve(row);
+            }
+          });
+        }
+      });
     });
-  });
+  } else {
+    const sql = `UPDATE messages SET status = ? WHERE messageId = ?`;
+    return new Promise((resolve) => {
+      db.run(sql, [status, messageId], function (err) {
+        if (err) {
+          console.error(err);
+          resolve(0);
+        } else {
+          console.log(`Row(s) updated (status): ${this.changes}`);
+          db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (getErr, row) => {
+            if (getErr) {
+              console.error(getErr);
+              resolve(1);
+            } else {
+              resolve(row);
+            }
+          });
+        }
+      });
+    });
+  }
 }
 
 // Export the MigrationManager for CLI usage

@@ -1,9 +1,11 @@
 export interface Message {
+  messageId?: string;
   userId: string;      // Identifier for the user who sent the message
-  message: string;     // The content of the message
-  createdAt?: number;   // timestamps are made on serverr
+  content: string;     // The content of the message
+  contentType?: string;
+  createdAt?: number;   // timestamps are made on server
   updatedAt?: number;
-  status?: "pending" | "sent" | "read" | null;
+  status?: "pending" | "sent" | "delivered" | "read" | null;
   chatId?: string;
   roomId?: string;
 }

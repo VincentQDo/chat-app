@@ -5,8 +5,8 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   console.log("[INFO] Getting all messages");
-  const { limit, offset } = req.query;
-  const data = await getAllMessages(limit, offset);
+  const { limit, offset, roomId } = req.query;
+  const data = await getAllMessages(limit, offset, roomId);
   res.json(data);
 });
 
@@ -19,11 +19,12 @@ router.post("/", async (req, res) => {
 router.patch("/", async (req, res) => {
   console.log("[INFO] Editing message from body", req.body);
   const { messageId, newContent, status } = req.body;
-  if (!messageId || !newContent) {
-    res.status(400).json({ error: "messageId and newContent are required" });
+  if (!messageId) {
+    res.status(400).json({ error: "messageId is required" });
     return;
   }
-  const data = await editMessage(messageId, newContent, status);
+  // If newContent is provided, update content; otherwise only update status
+  const data = await editMessage(messageId, newContent ?? undefined, status);
   res.json(data);
 });
 

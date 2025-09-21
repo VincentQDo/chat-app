@@ -1,11 +1,11 @@
 type AppMessageProps = {
-  message: string
+  content?: string
   date: string | Date
   isMine?: boolean
 }
 
 export default function AppMessageLarge({
-  message,
+  content,
   date,
   isMine = false,
 }: AppMessageProps) {
@@ -22,7 +22,7 @@ export default function AppMessageLarge({
           : "bg-muted"
           }`}
       >
-        <p className="text break-words whitespace-pre-wrap">{message}</p>
+        <p className="text break-words whitespace-pre-wrap">{content}</p>
         <span className="text-xs text-muted-foreground whitespace-nowrap">
           {dateString}
         </span>

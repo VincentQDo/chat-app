@@ -35,7 +35,7 @@ app.get("/globalmessages", async (req, res) => {
   const response = await fetch(baseURL + "/messages");
   /** @type {Message[]} */
   const messages = await response.json();
-  messages.sort((a, b) => (a.updatedAt > b.updatedAt ? 1 : -1));
+  messages.sort((a, b) => (a.editedAt > b.editedAt ? 1 : -1));
   res.json(messages);
 });
 
@@ -233,24 +233,29 @@ io.on("connection", (socket) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(jsonBody),
     });
-    console.debug("[DEBUG] Response received: ", response);
+    console.debug("[DEBUG] Response received: ", response.status);
     if (response.ok) {
-      response.json().then((/** @type {Message} */ data) => {
-        console.info("[INFO] Message stored in database: ", data);
-        data.messageId = data.messageId; // Add messageId from DB to broadcast
-      });
-      const jsonData = { error: null, message: jsonBody };
+      const dbMessage = await response.json();
+      console.info("[INFO] Message stored in database: ", dbMessage);
+
+      // Use the canonical DB message when broadcasting
+      const jsonData = { error: null, message: dbMessage };
       console.info("[INFO] Broadcasting message: ", jsonData);
 
       // Broadcast to specific room if roomId is provided
       if (roomId) {
         socket.to(roomId).emit("message", jsonData);
-        const response = await fetch(baseURL + "/messages", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messageId: jsonBody.messageId, newContent: message, status: MESSAGE_STATUS.DELIVERED }),
-        });
+        // Mark delivered (best-effort) using messageId returned from DB
+        if (dbMessage && dbMessage.messageId) {
+          await fetch(baseURL + "/messages", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messageId: dbMessage.messageId, newContent: dbMessage.content, status: MESSAGE_STATUS.DELIVERED }),
+          });
+        }
       }
+    } else {
+      console.error("[ERROR] Failed to store message in DB. Status:", response.status);
     }
   });
 

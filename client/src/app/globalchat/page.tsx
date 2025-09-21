@@ -64,10 +64,10 @@ export default function GlobalChat() {
     if (Notification.permission !== "granted") {
       Notification.requestPermission().then((result) => {
         console.log(result)
-        new Notification("New Message", { body: data.message?.message })
+        new Notification("New Message", { body: data.message?.content })
       })
     } else {
-      new Notification("New Message", { body: data.message?.message })
+      new Notification("New Message", { body: data.message?.content })
     }
   }
 
@@ -203,7 +203,17 @@ export default function GlobalChat() {
 
     socket.current.on("disconnect", (reason) => {
       console.error("Disconnected from server for the following reason: ", reason)
-      setMessages((prevMessages) => [{ message: "Disconnected for the following reason: " + reason, userId: "System" }, ...prevMessages])
+      setMessages((prevMessages) => [
+        {
+          messageId: `system-${Date.now()}`,
+          userId: "System",
+          content: "Disconnected for the following reason: " + reason,
+          contentType: "text",
+          createdAt: Date.now(),
+          roomId: selectedRoom,
+          status: "sent",
+        }, ...prevMessages
+      ])
       // Clear typing indicators on disconnect
       setTypingUsers([]);
     })
@@ -243,12 +253,16 @@ export default function GlobalChat() {
       clearTimeout(typingTimeoutRef.current);
     }
 
+    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const messageObject: Message = {
+      messageId: tempId,
       userId: userName,
-      message: userInput,
+      content: userInput,
+      contentType: "text",
       createdAt: Date.now(),
       roomId: selectedRoom,
-    } as Message & { roomId?: string };
+      status: "sent",
+    } as any;
     setMessages((prev) => [...prev, messageObject]);
     setUserInput("");
     shouldScroll.current = true;
@@ -327,7 +341,7 @@ export default function GlobalChat() {
             messages.map((msg, index) => (
               <AppMessage
                 key={index}
-                message={msg.message}
+                content={msg.content}
                 date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
                 isMine={msg.userId === userName}
                 senderName={msg.userId}
@@ -337,7 +351,7 @@ export default function GlobalChat() {
             messages.map((msg, index) => (
               <AppMessageLarge
                 key={index}
-                message={msg.message}
+                content={msg.content}
                 date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
                 isMine={msg.userId === userName}
               />

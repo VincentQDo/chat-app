@@ -1,7 +1,7 @@
 import { useAuth } from "@/lib/auth-provider"
 
 type AppMessageProps = {
-  message: string
+  content?: string
   date: string | Date
   isMine?: boolean
   senderName?: string // For non-mine messages
@@ -9,7 +9,7 @@ type AppMessageProps = {
 }
 
 export default function AppMessage({
-  message,
+  content,
   date,
   isMine = false,
   senderName,
@@ -74,7 +74,7 @@ export default function AppMessage({
 
         {/* Message content */}
         <div className="text-sm text-foreground break-words whitespace-pre-wrap leading-relaxed">
-          {message}
+          {content}
         </div>
       </div>
 
