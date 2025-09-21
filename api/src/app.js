@@ -8,6 +8,17 @@ import {
   websocketVerifyToken,
 } from "./utilities/token-utilities.js";
 
+
+/**
+ * Copy and pasted from database/db/database.js will need refactoring later
+ * to avoid circular dependencies
+ * */
+export const MESSAGE_STATUS = Object.freeze({
+  SENT: "sent",
+  DELIVERED: "delivered",
+  READ: "read",
+});
+
 // Create an Express application
 
 const baseURL = process.env.DB_URL;
@@ -180,10 +191,10 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("message", async (data) => {
+  socket.on("message", async (/** @type {Message} */ data) => {
     console.info(`[INFO] Socket ${socket.id} sent: `, data);
     const currTime = Date.now();
-    const { userId, message, chatId, roomId } = data;
+    const { messageId, userId, roomId, content, createdAt, editedAt, isDeleted, status } = data;
 
     // Stop typing indicator when message is sent
     if (roomId && userId) {
@@ -206,12 +217,15 @@ io.on("connection", (socket) => {
 
     /** @type {Message} */
     const jsonBody = {
-      message: message,
-      userId: userId,
-      chatId: chatId,
-      createdAt: currTime,
-      updatedAt: currTime,
-      status: "sent",
+      messageId: messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      userId: userId || "anonymous",
+      roomId: roomId || "global",
+      content: content || "",
+      createdAt: createdAt || currTime,
+      editedAt: editedAt || null,
+      isDeleted: isDeleted || false,
+      status: status || MESSAGE_STATUS.SENT,
+      contentType: "text", // default to text for now
     };
     console.info("[INFO] Sending message to database: ", jsonBody);
     const response = await fetch(baseURL + "/messages", {
@@ -221,13 +235,21 @@ io.on("connection", (socket) => {
     });
     console.debug("[DEBUG] Response received: ", response);
     if (response.ok) {
-      jsonBody.status = "sent";
+      response.json().then((/** @type {Message} */ data) => {
+        console.info("[INFO] Message stored in database: ", data);
+        data.messageId = data.messageId; // Add messageId from DB to broadcast
+      });
       const jsonData = { error: null, message: jsonBody };
       console.info("[INFO] Broadcasting message: ", jsonData);
 
       // Broadcast to specific room if roomId is provided
       if (roomId) {
         socket.to(roomId).emit("message", jsonData);
+        const response = await fetch(baseURL + "/messages", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messageId: jsonBody.messageId, newContent: message, status: MESSAGE_STATUS.DELIVERED }),
+        });
       }
     }
   });

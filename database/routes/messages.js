@@ -1,5 +1,5 @@
 import express from "express";
-import { addMessage, deleteMessage, getAllMessages } from "../db/database.js";
+import { addMessage, deleteMessage, editMessage, getAllMessages } from "../db/database.js";
 
 const router = express.Router();
 
@@ -13,6 +13,17 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   console.log("[INFO] Adding messaage from body", req.body);
   const data = await addMessage(req.body);
+  res.json(data);
+});
+
+router.patch("/", async (req, res) => {
+  console.log("[INFO] Editing message from body", req.body);
+  const { messageId, newContent, status } = req.body;
+  if (!messageId || !newContent) {
+    res.status(400).json({ error: "messageId and newContent are required" });
+    return;
+  }
+  const data = await editMessage(messageId, newContent, status);
   res.json(data);
 });
 

@@ -3,10 +3,15 @@
 import fs from "fs";
 import sqlite from "sqlite3";
 import path from "path";
-import { MigrationManager } from "./migration-manager";
+import { MigrationManager } from "./migration-manager.js";
 
 const DATA_DIR = process.env.DB_DIR || path.resolve(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "data.db");
+export const MESSAGE_STATUS = Object.freeze({
+  SENT: "sent",
+  DELIVERED: "delivered",
+  READ: "read",
+});
 
 // Ensure data directory exists
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -56,7 +61,7 @@ export function addMessage(payload) {
   const createdAt = Number(payload.createdAt) || Date.now();
   const editedAt = payload.editedAt ? Number(payload.editedAt) : null;
   const isDeleted = payload.isDeleted ? 1 : 0;
-  const status = payload.status || "sent"; // sent | delivered | read
+  const status = payload.status || MESSAGE_STATUS.SENT; // sent | delivered | read
 
   if (!userId) {
     console.error("Missing userId when inserting message");
@@ -236,6 +241,28 @@ export function addRoomMember(roomId, userId) {
         console.error(err);
         resolve(0);
       } else {
+        resolve(1);
+      }
+    });
+  });
+}
+
+/**
+ * Edit a message's content and update the editedAt timestamp.
+ * @param {string} messageId
+ * @param {string} newContent
+ * @returns {Promise<number>} 1 if success, 0 if fail
+ */
+export function editMessage(messageId, newContent, status = MESSAGE_STATUS.SENT) {
+  const editedAt = Date.now();
+  const sql = `UPDATE messages SET content = ?, editedAt = ?, status = ? WHERE messageId = ?`;
+  return new Promise((resolve) => {
+    db.run(sql, [newContent, editedAt, status, messageId], function (err) {
+      if (err) {
+        console.error(err);
+        resolve(0);
+      } else {
+        console.log(`Row(s) updated: ${this.changes}`);
         resolve(1);
       }
     });
