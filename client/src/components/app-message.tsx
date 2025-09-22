@@ -1,5 +1,6 @@
 import { useAuth } from "@/lib/auth-provider"
 import { Message } from "@/models/models"
+import AppMessageStatus from "./app-message-status";
 
 export default function AppMessage(params: { message: Message }) {
   const { message } = params;
@@ -59,6 +60,8 @@ export default function AppMessage(params: { message: Message }) {
           </span>
           <span className="text-xs text-muted-foreground">
             {dateString}
+            <AppMessageStatus status={message.status!} isMine={isMine} />
+
           </span>
         </div>
 

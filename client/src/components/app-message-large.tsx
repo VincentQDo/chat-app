@@ -1,5 +1,6 @@
 import { useAuth } from "@/lib/auth-provider"
 import { Message } from "@/models/models"
+import AppMessageStatus from "./app-message-status";
 
 // one day i will refactor this and the small message into one component with props but alas it's not today
 export default function AppMessageLarge(params: { message: Message }) {
@@ -23,6 +24,7 @@ export default function AppMessageLarge(params: { message: Message }) {
         <span className="text-xs text-muted-foreground whitespace-nowrap">
           {dateString}
         </span>
+        <AppMessageStatus status={params.message.status!} isMine={isMine} />
       </div>
 
       {/* avatar (right for your message) */}
