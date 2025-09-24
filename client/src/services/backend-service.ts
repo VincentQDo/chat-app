@@ -2,7 +2,7 @@ export function getBackendBaseUrl() {
     if (process.env.NEXT_PUBLIC_API_URL) {
         return process.env.NEXT_PUBLIC_API_URL;
     } else {
-        return "http://192.168.50.113:8080";
+        return "http://localhost:8080";
     }
 }
 
