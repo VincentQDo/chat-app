@@ -31,6 +31,33 @@ app.get("/authenticate", (req, res) => {
   res.send(true);
 });
 
+app.patch("/messages/status", async (req, res) => {
+  const { statuses } = req.body;
+
+  if (!Array.isArray(statuses)) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  // Update message statuses in the database
+  const result = await fetch(baseURL + "/messages/status", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ statuses }),
+  });
+
+  if (!result.ok) {
+    res.status(500).json({ error: "Failed to update message statuses" });
+    return;
+  }
+
+  const jsonResult = await result.json();
+  console.log("Status update results: ", jsonResult);
+  // Check if all updates were successful
+
+  res.json({ success: jsonResult.every(result => result > 0) });
+});
+
 app.get("/globalmessages", async (req, res) => {
   const response = await fetch(baseURL + "/messages");
   /** @type {Message[]} */
@@ -194,7 +221,7 @@ io.on("connection", (socket) => {
   socket.on("message", async (/** @type {Message} */ data) => {
     console.info(`[INFO] Socket ${socket.id} sent: `, data);
     const currTime = Date.now();
-    const { messageId, userId, roomId, content, createdAt, editedAt, isDeleted, status } = data;
+    const { messageId, userId, roomId, content, createdAt, editedAt, isDeleted, statuses } = data;
 
     // Stop typing indicator when message is sent
     if (roomId && userId) {
@@ -224,7 +251,7 @@ io.on("connection", (socket) => {
       createdAt: createdAt || currTime,
       editedAt: editedAt || null,
       isDeleted: isDeleted || false,
-      status: status || MESSAGE_STATUS.SENT,
+      statuses: statuses || [],
       contentType: "text", // default to text for now
     };
     console.info("[INFO] Sending message to database: ", jsonBody);
