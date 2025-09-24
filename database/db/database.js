@@ -325,31 +325,49 @@ export function editMessage(messageId, newContent) {
 
 /**
  * Insert or update the status of a message for a user.
- * @param {string} messageId
- * @param {string} userId
- * @param {string} status One of MESSAGE_STATUS
+ * @param {MessageStatus[]} statuses
  * @returns {Promise<number>} 1 if success, 0 if fail
  */
-export function insertOrUpdateMessageStatus(messageId, userId, status) {
+export function markMessagesAsReadPrepared(statuses) {
   const updatedAt = Date.now();
-  const sql = `INSERT INTO message_status(messageId, userId, status, updatedAt)
-    VALUES(?, ?, ?, ?)
-    ON CONFLICT(messageId, userId) DO UPDATE SET status = excluded.status, updatedAt = excluded.updatedAt`;
+  
+  if (statuses.length === 0) {
+    return Promise.resolve(1);
+  }
+
   return new Promise((resolve) => {
-    db.run(sql, [messageId, userId, status, updatedAt], function (err) {
-      if (err) {
-        console.error(err);
-        resolve(0);
-      } else {
-        console.log(`Message status updated for messageId ${messageId}, userId ${userId}`);
-        // return the combined object for convenience
-        getMessageWithStatuses(messageId)
-          .then((combined) => resolve(combined))
-          .catch((e) => {
-            console.error(e);
-            resolve(0);
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION", (err) => {
+        if (err) {
+          console.error("Failed to begin transaction:", err);
+          resolve(0);
+          return;
+        }
+
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO message_status (messageId, userId, status, updatedAt) 
+          VALUES (?, ?, ?, ?)
+        `);
+
+        let completed = 0;
+        let hasError = false;
+
+        statuses.forEach((status) => {
+          stmt.run([status.messageId, status.userId, status.status, updatedAt], (err) => {
+            completed++;
+            if (err) hasError = true;
+
+            if (completed === statuses.length) {
+              stmt.finalize();
+              if (hasError) {
+                db.run("ROLLBACK", () => resolve(0));
+              } else {
+                db.run("COMMIT", () => resolve(1));
+              }
+            }
           });
-      }
+        });
+      });
     });
   });
 }
