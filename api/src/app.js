@@ -31,13 +31,22 @@ app.get("/authenticate", (req, res) => {
   res.send(true);
 });
 
-app.patch("/messages/status", async (req, res) => {
+app.patch("/messages/read", async (req, res) => {
   const { statuses } = req.body;
 
   if (!Array.isArray(statuses)) {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
+
+  if (!statuses.every(status => 'messageId' in status && 'userId' in status && 'status' in status)) {
+    res.status(400).json({ error: "Invalid status format" });
+    return;
+  }
+
+  statuses.forEach(status => {
+    status.status = MESSAGE_STATUS.READ;
+  });
 
   // Update message statuses in the database
   const result = await fetch(baseURL + "/messages/status", {
@@ -55,7 +64,7 @@ app.patch("/messages/status", async (req, res) => {
   console.log("Status update results: ", jsonResult);
   // Check if all updates were successful
 
-  res.json({ success: jsonResult.every(result => result > 0) });
+  res.json({ success: jsonResult });
 });
 
 app.get("/globalmessages", async (req, res) => {
@@ -216,6 +225,40 @@ io.on("connection", (socket) => {
         });
       }
     }
+  });
+
+  socket.on("read", async (/** @type {{ statuses: any[] }} */ data) => {
+    const { statuses } = data;
+    console.info(`[INFO] Socket ${socket.id} read message: `, statuses);
+
+    if (!Array.isArray(statuses)) {
+      return;
+    }
+
+    if (!statuses.every(status => 'messageId' in status && 'userId' in status && 'status' in status)) {
+      return;
+    }
+
+    statuses.forEach(status => {
+      status.status = MESSAGE_STATUS.READ;
+    });
+
+    // Update message statuses in the database
+    const result = await fetch(baseURL + "/messages/status", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statuses: statuses }),
+    });
+
+    if (!result.ok) {
+      return;
+    }
+
+    const jsonResult = await result.json();
+    console.log("Status update results: ", jsonResult);
+    // Emit read receipt to all clients including sender
+    // Sender will ignore it if not needed
+    io.emit("read", { success: data });
   });
 
   socket.on("message", async (/** @type {Message} */ data) => {
