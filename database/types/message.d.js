@@ -1,10 +1,20 @@
 /**
  * @typedef {Object} Message
- * @property {number} [id] - Unique message id (autoincremented)
- * @property {string} userId
- * @property {string} message - message content
- * @property {number} createdAt - Timestamp (ms) when the message was created
- * @property {number} updatedAt - Timestamp (ms) when message was updated
- * @property {string} [status='pending'] - Status of message
- * @property {string} [chatId='global'] - Chat ID or group context
+ * @property {string} messageId - Unique identifier for the message
+ * @property {string} roomId - Identifier of the room where the message was sent
+ * @property {string} userId - Identifier of the user who sent the message
+ * @property {string} content - The actual content of the message
+ * @property {string} contentType - Type of content (e.g., 'text', 'image', 'file', 'system')
+ * @property {number} createdAt - Timestamp when the message was created (in milliseconds since epoch)
+ * @property {number|null} editedAt - Timestamp when the message was last edited (null if never edited)
+ * @property {boolean} isDeleted - Flag indicating if the message has been deleted
+ * @property {MessageStatus[]} statuses - Status of the message ('sent', 'delivered', 'read')
+ */
+
+/**
+ * @typedef {Object} MessageStatus
+ * @property {string} messageId - Unique identifier for the message
+ * @property {string} userId - Identifier of the user associated with this status
+ * @property {string} status - Status of the message for this user ('sent', 'delivered', 'read')
+ * @property {number} updatedAt - Timestamp when the status was last updated (in milliseconds since epoch)
  */

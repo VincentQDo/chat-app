@@ -1,15 +1,13 @@
-type AppMessageProps = {
-  message: string
-  date: string | Date
-  isMine?: boolean
-}
+import { useAuth } from "@/lib/auth-provider"
+import { Message } from "@/models/models"
+import AppMessageStatus from "./app-message-status";
 
-export default function AppMessageLarge({
-  message,
-  date,
-  isMine = false,
-}: AppMessageProps) {
-  const dateString = typeof date === "string" ? date : date.toLocaleString()
+// one day i will refactor this and the small message into one component with props but alas it's not today
+export default function AppMessageLarge(params: { message: Message }) {
+  const { content, createdAt, userId } = params.message;
+  const dateString = createdAt ? new Date(createdAt).toLocaleString() : "";
+  const { user } = useAuth() // later for username and avatar
+  const isMine = userId === (user?.displayName || user?.email || "current-user"); // Using display name for now because the database is wack will fix later
 
   return (
     <div className={`flex items-start gap-2 ${isMine ? "justify-end" : ""}`}>
@@ -22,10 +20,11 @@ export default function AppMessageLarge({
           : "bg-muted"
           }`}
       >
-        <p className="text break-words whitespace-pre-wrap">{message}</p>
+        <p className="text break-words whitespace-pre-wrap">{content}</p>
         <span className="text-xs text-muted-foreground whitespace-nowrap">
           {dateString}
         </span>
+        <AppMessageStatus status={params.message.status!} isMine={isMine} />
       </div>
 
       {/* avatar (right for your message) */}

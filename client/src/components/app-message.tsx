@@ -1,21 +1,10 @@
 import { useAuth } from "@/lib/auth-provider"
+import { Message } from "@/models/models"
+import AppMessageStatus from "./app-message-status";
 
-type AppMessageProps = {
-  message: string
-  date: string | Date
-  isMine?: boolean
-  senderName?: string // For non-mine messages
-  senderId?: string   // For color generation
-}
-
-export default function AppMessage({
-  message,
-  date,
-  isMine = false,
-  senderName,
-  senderId,
-}: AppMessageProps) {
-  const dateString = typeof date === "string" ? date : date.toLocaleString()
+export default function AppMessage(params: { message: Message }) {
+  const { message } = params;
+  const dateString = message.createdAt ? new Date(message.createdAt).toLocaleString() : ""
   const { user } = useAuth() // later for username and avatar
 
   const getRandomColor = (id: string, isCurrentUser: boolean, myColor: string, colors: string[]) => {
@@ -29,9 +18,11 @@ export default function AppMessage({
   };
 
   // Determine the user ID and display name for color generation
-  const currentUserId = user?.uid || user?.email || "current-user";
-  const messageUserId = isMine ? currentUserId : (senderId || senderName || "unknown");
-  const displayName = isMine ? user?.displayName || "You" : (senderName || "Unknown User");
+  const currentUserId = user?.displayName || user?.email || "current-user";
+  const isMine = message.userId === currentUserId;
+  const content = message.content || "";
+  const messageUserId = isMine ? currentUserId : (message.userId || "unknown");
+  const displayName = isMine ? user?.displayName || "You" : (message.userId || "Unknown User");
 
   const avatarColors = [
     "bg-red-500", "bg-orange-500", "bg-amber-500", "bg-yellow-500",
@@ -69,12 +60,14 @@ export default function AppMessage({
           </span>
           <span className="text-xs text-muted-foreground">
             {dateString}
+            <AppMessageStatus status={message.status!} isMine={isMine} />
+
           </span>
         </div>
 
         {/* Message content */}
         <div className="text-sm text-foreground break-words whitespace-pre-wrap leading-relaxed">
-          {message}
+          {content}
         </div>
       </div>
 

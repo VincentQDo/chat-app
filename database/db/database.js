@@ -3,113 +3,111 @@
 import fs from "fs";
 import sqlite from "sqlite3";
 import path from "path";
+import { MigrationManager } from "./migration-manager.js";
 
 const DATA_DIR = process.env.DB_DIR || path.resolve(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "data.db");
+export const MESSAGE_STATUS = Object.freeze({
+  SENT: "sent",
+  DELIVERED: "delivered",
+  READ: "read",
+});
 
+// Ensure data directory exists
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+// Create database connection
 const db = new sqlite.Database(DB_FILE, (err) => {
-  console.log("Trying to access the database at ", DB_FILE);
-  if (err) console.error("DB connection error", err.message);
-  else console.log("DB connection established");
+  console.log("Trying to access the database at", DB_FILE);
+  if (err) {
+    console.error("❌ DB connection error:", err.message);
+    process.exit(1);
+  } else {
+    console.log("✅ DB connection established");
+  }
 });
 
-db.serialize(() => {
-  console.log("Configuring Database");
-  db.run(
-    `
-		CREATE TABLE IF NOT EXISTS users (
-			userId TEXT PRIMARY KEY,
-			userName TEXT
-		)
-	`,
-    (err) => {
-      if (err) console.error("Failed to create users table", err.message);
-    },
-  );
-  db.run(
-    `
-		CREATE TABLE IF NOT EXISTS messages (
-			messageid INTEGER PRIMARY KEY AUTOINCREMENT,
-			userId TEXT,
-			message TEXT,
-			createdAt INTEGER,
-			updatedAt INTEGER,
-			status TEXT DEFAULT 'pending',
-			chatId TEXT DEFAULT 'global',
-			FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
-		)
-	`,
-    (err) => {
-      if (err) console.error("failed to create messages table", err.message);
-    },
-  );
-  db.run(
-    `
-		CREATE TABLE IF NOT EXISTS relationships (
-			userid1 TEXT,
-			userid2 TEXT,
-			status TEXT DEFAULT 'pending',
-			createdAt INTEGER,
-			updatedAt INTEGER,
-			PRIMARY KEY (userid1, userid2),
-			FOREIGN KEY (userid1) REFERENCES users(userId) ON DELETE CASCADE,
-			FOREIGN KEY (userid2) REFERENCES users(userId) ON DELETE CASCADE
-		)
-	`,
-    (err) => {
-      if (err)
-        console.error("failed to create relationships table", err.message);
-    },
-  );
-  db.run("CREATE INDEX IF NOT EXISTS idx_userId ON messages(userId)", (err) => {
-    if (err) console.error("Failed to create index", err.message);
-  });
-  db.run(
-    "CREATE INDEX IF NOT EXISTS idx_createdAt ON messages(createdAt)",
-    (err) => {
-      if (err) console.error("Failed to create createdAt index", err.message);
-    },
-  );
-});
+// Initialize database with migrations
+async function initializeDatabase() {
+  const migrationManager = new MigrationManager(db);
+
+  try {
+    await migrationManager.runMigrations();
+  } catch (error) {
+    console.error("❌ Database initialization failed:", error);
+    process.exit(1);
+  }
+}
+
+// Run initialization
+initializeDatabase();
 
 /**
  * @param {Message} content
  * @returns {Promise<number>} 1 if success 0 if fail
  * */
-export function addMessage(content) {
-  let { userId, message, status, chatId } = content;
+/**
+ * Insert a message into the new messages schema.
+ * Accepts payloads produced by the API (compatible fields: message, userId, chatId/roomId, contentType, createdAt)
+ * @param {Object} payload
+ * @returns {Promise<number>} 1 on success, 0 on failure
+ */
+export function addMessage(payload) {
+  const incomingMessage = payload.message ?? payload.content ?? "";
+  const userId = payload.userId || null;
+  // allow either chatId (old) or roomId (new client)
+  const roomId = payload.roomId || null;
+  const contentType = payload.contentType || "text";
+  const createdAt = Number(payload.createdAt) || Date.now();
+  const editedAt = payload.editedAt ? Number(payload.editedAt) : null;
+  const isDeleted = payload.isDeleted ? 1 : 0;
+  const status = payload.status || MESSAGE_STATUS.SENT; // sent | delivered | read
 
-  if (!status) status = "pending";
-  if (!chatId) chatId = "global";
-  let [createdAt, updatedAt] = [Date.now(), Date.now()];
+  if (!userId) {
+    console.error("Missing userId when inserting message");
+    return Promise.resolve(0);
+  }
+
+  // generate a simple unique id if not provided
+  const messageId = payload.messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
   const sql = `
-		INSERT INTO messages(userId, message, status, chatId, createdAt, updatedAt)
-		VALUES(?, ?, ?, ?, ?, ?)
-	`;
-  console.info("Inserting message into database", {
-    userId,
-    message,
-    status,
-    chatId,
-    createdAt,
-    updatedAt,
-  });
+    INSERT INTO messages(messageId, roomId, userId, content, contentType, createdAt, editedAt, isDeleted)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  console.info("Inserting message into database", { messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted });
+
   return new Promise((resolve) => {
-    db.run(
-      sql,
-      [userId, message, status, chatId, createdAt, updatedAt],
-      (err) => {
-        if (err) {
-          console.error(err);
-          resolve(0);
-        } else {
-          console.log("Message inserted");
-          resolve(1);
-        }
-      },
-    );
+    db.run(sql, [messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted], function (err) {
+      if (err) {
+        console.error("DB insert error:", err.message);
+        resolve(0);
+      } else {
+        console.log("Message inserted", messageId);
+        // Insert initial status row for the sender into message_status table
+        const updatedAt = Date.now();
+        const statusSql = `INSERT INTO message_status(messageId, userId, status, updatedAt)
+          VALUES(?, ?, ?, ?)
+          ON CONFLICT(messageId, userId) DO UPDATE SET status = excluded.status, updatedAt = excluded.updatedAt`;
+
+        db.run(statusSql, [messageId, userId, status, updatedAt], async (statusErr) => {
+          if (statusErr) {
+            console.error("DB insert status error:", statusErr.message);
+            resolve(0);
+          } else {
+            console.log(`Initial message status set for messageId ${messageId}, userId ${userId}`);
+            try {
+              const combined = await getMessageWithStatuses(messageId);
+              resolve(combined);
+            } catch (e) {
+              console.error(e);
+              resolve(0);
+            }
+          }
+        });
+      }
+    });
   });
 }
 
@@ -118,7 +116,7 @@ export function addMessage(content) {
  * @returns {Promise<number>} 1 if success 0 if fail
  * */
 export function deleteMessage(messageId) {
-  const sql = `DELETE FROM messages WHERE messageid = ?`;
+  const sql = `DELETE FROM messages WHERE messageId = ?`;
   return new Promise((resolve, reject) => {
     db.run(sql, [messageId], function (err) {
       if (err) {
@@ -137,73 +135,115 @@ export function deleteMessage(messageId) {
  * @param {any} [offset] Default to 0 if not provided
  * @returns {Promise<Message[]>} Promise of messages object array
  * */
-export function getAllMessages(limit, offset) {
+export function getAllMessages(limit = 100, offset = 0, roomId = null) {
   let lim = Number.isSafeInteger(limit) ? Number(limit) : 100;
   lim = Math.min(lim, 200);
   const off = Number.isSafeInteger(offset) ? offset : 0;
+
   console.log(
-    "Fetching messages with the following limit and offset: ",
+    "Fetching messages with the following limit and offset:",
     lim,
     off,
   );
+
   return new Promise((resolve, reject) => {
-    db.all(
-      "SELECT * FROM messages ORDER BY createdAt DESC LIMIT ? OFFSET ?",
-      [lim, off],
-      (err, rows) => {
-        if (err) {
-          console.error(err);
-          reject(err);
-        } else {
-          console.log("Fetch result: ", rows);
-          resolve(rows);
+    const params = [];
+    let sql = "SELECT * FROM messages";
+    if (roomId) {
+      sql += " WHERE roomId = ?";
+      params.push(roomId);
+    }
+    sql += " ORDER BY createdAt DESC LIMIT ? OFFSET ?";
+    params.push(lim, off);
+
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+        return;
+      }
+
+      const msgs = rows || [];
+      if (msgs.length === 0) {
+        resolve([]);
+        return;
+      }
+
+      // Batch fetch all statuses for the returned messages in one query
+      const messageIds = msgs.map((r) => r.messageId);
+      const placeholders = messageIds.map(() => "?").join(",");
+      const statusSql = `SELECT messageId, userId, status, updatedAt FROM message_status WHERE messageId IN (${placeholders})`;
+
+      db.all(statusSql, messageIds, (statusErr, statusRows) => {
+        if (statusErr) {
+          console.error("Failed to fetch message statuses:", statusErr);
+          // Fallback: return raw message rows
+          resolve(msgs);
+          return;
         }
-      },
-    );
+
+        // Group statuses by messageId
+        const statusMap = new Map();
+        for (const s of statusRows || []) {
+          if (!statusMap.has(s.messageId)) statusMap.set(s.messageId, []);
+          statusMap.get(s.messageId).push({ userId: s.userId, status: s.status, updatedAt: s.updatedAt });
+        }
+
+        // Combine
+        const combined = msgs.map((m) => {
+          const statuses = statusMap.get(m.messageId) || [];
+          const senderStatusRow = statuses.find((s) => s.userId === m.userId);
+          return { ...m, statuses, status: senderStatusRow ? senderStatusRow.status : null };
+        });
+
+        resolve(combined);
+      });
+    });
   });
 }
 
 /**
- * @param {number} [messageId]
+ * @param {string} messageId
  * @returns {Promise<Message|null>}
  */
 export function getMessageById(messageId) {
   return new Promise((resolve, reject) => {
-    db.get(
-      "SELECT * FROM messages WHERE messageid = ?",
-      [messageId],
-      (err, row) => {
-        if (err) {
-          console.error(err);
-          reject(err);
-        } else {
-          resolve(row ?? null);
-        }
-      },
-    );
+    db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (err, row) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      } else {
+        resolve(row ?? null);
+      }
+    });
   });
 }
 
 /**
- * Cursor pagination: rows with messageid > startId
- * @param {string|number} startId
- * @param {number} [limit]
- * @returns {Promise<Message[]>}
+ * Fetch a message and its associated message_status rows.
+ * Returns a combined object matching the canonical Message shape with an
+ * additional `statuses` array and a `status` field representing the sender's status.
+ * @param {string} messageId
+ * @returns {Promise<any|null>}
  */
-export function getMessagesAfterId(startId, limit) {
-  const start = Number(startId) || 0;
-  let lim = Number.isSafeInteger(limit) ? limit : 1;
-  lim = Math.min(lim, 200);
+export async function getMessageWithStatuses(messageId) {
+  const message = await getMessageById(messageId);
+  if (!message) return null;
+
   return new Promise((resolve, reject) => {
     db.all(
-      "SELECT * FROM messages WHERE messageid > ? ORDER BY messageid ASC LIMIT ?",
-      [start, lim],
+      `SELECT userId, status, updatedAt FROM message_status WHERE messageId = ?`,
+      [messageId],
       (err, rows) => {
         if (err) {
           console.error(err);
           reject(err);
         } else {
-          resolve(rows);
+          const statuses = (/** @type {{userId: string, status: string, updatedAt: number}[]} */ rows || []);
+          // determine sender status (status for the original userId)
+          const senderStatusRow = statuses.find((s) => s.userId === message.userId);
+          const combined = { ...message, statuses, status: senderStatusRow ? senderStatusRow.status : null };
+          resolve(combined);
         }
       },
     );
@@ -231,13 +271,14 @@ export function searchMessages(q, limit, offset) {
   lim = Math.min(lim, 200);
   const off = Number.isSafeInteger(offset) ? offset : 0;
   const like = "%" + escapeLike(q) + "%";
+
   return new Promise((resolve, reject) => {
     db.all(
       `SELECT * FROM messages
-			 WHERE message LIKE ? ESCAPE '\\'
-			 COLLATE NOCASE
-			 ORDER BY createdAt DESC
-			 LIMIT ? OFFSET ?`,
+       WHERE content LIKE ? ESCAPE '\\'
+       COLLATE NOCASE
+       ORDER BY createdAt DESC
+       LIMIT ? OFFSET ?`,
       [like, lim, off],
       (err, rows) => {
         if (err) {
@@ -251,4 +292,86 @@ export function searchMessages(q, limit, offset) {
   });
 }
 
+/**
+ * Edit a message's content and update the editedAt timestamp.
+ * @param {string} messageId
+ * @param {string} newContent
+ * @returns {Promise<number>} 1 if success, 0 if fail
+ */
+export function editMessage(messageId, newContent) {
+  const editedAt = Date.now();
+  // If newContent is provided, update content and editedAt; otherwise only update status
+  if (typeof newContent === "string") {
+    const sql = `UPDATE messages SET content = ?, editedAt = ? WHERE messageId = ?`;
+    return new Promise((resolve) => {
+      db.run(sql, [newContent, editedAt, messageId], function (err) {
+        if (err) {
+          console.error(err);
+          resolve(0);
+        } else {
+          console.log(`Row(s) updated: ${this.changes}`);
+          // return the updated message with statuses
+          getMessageWithStatuses(messageId)
+            .then((combined) => resolve(combined))
+            .catch((e) => {
+              console.error(e);
+              resolve(0);
+            });
+        }
+      });
+    });
+  }
+}
+
+/**
+ * Insert or update the status of a message for a user.
+ * @param {MessageStatus[]} statuses
+ * @returns {Promise<number>} 1 if success, 0 if fail
+ */
+export function markMessagesAsReadPrepared(statuses) {
+  const updatedAt = Date.now();
+  
+  if (statuses.length === 0) {
+    return Promise.resolve(1);
+  }
+
+  return new Promise((resolve) => {
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION", (err) => {
+        if (err) {
+          console.error("Failed to begin transaction:", err);
+          resolve(0);
+          return;
+        }
+
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO message_status (messageId, userId, status, updatedAt) 
+          VALUES (?, ?, ?, ?)
+        `);
+
+        let completed = 0;
+        let hasError = false;
+
+        statuses.forEach((status) => {
+          stmt.run([status.messageId, status.userId, status.status, updatedAt], (err) => {
+            completed++;
+            if (err) hasError = true;
+
+            if (completed === statuses.length) {
+              stmt.finalize();
+              if (hasError) {
+                db.run("ROLLBACK", () => resolve(0));
+              } else {
+                db.run("COMMIT", () => resolve(1));
+              }
+            }
+          });
+        });
+      });
+    });
+  });
+}
+
+// Export the MigrationManager for CLI usage
+export { MigrationManager };
 export default db;

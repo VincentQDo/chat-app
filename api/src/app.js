@@ -8,6 +8,17 @@ import {
   websocketVerifyToken,
 } from "./utilities/token-utilities.js";
 
+
+/**
+ * Copy and pasted from database/db/database.js will need refactoring later
+ * to avoid circular dependencies
+ * */
+export const MESSAGE_STATUS = Object.freeze({
+  SENT: "sent",
+  DELIVERED: "delivered",
+  READ: "read",
+});
+
 // Create an Express application
 
 const baseURL = process.env.DB_URL;
@@ -20,11 +31,38 @@ app.get("/authenticate", (req, res) => {
   res.send(true);
 });
 
+app.patch("/messages/status", async (req, res) => {
+  const { statuses } = req.body;
+
+  if (!Array.isArray(statuses)) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  // Update message statuses in the database
+  const result = await fetch(baseURL + "/messages/status", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ statuses }),
+  });
+
+  if (!result.ok) {
+    res.status(500).json({ error: "Failed to update message statuses" });
+    return;
+  }
+
+  const jsonResult = await result.json();
+  console.log("Status update results: ", jsonResult);
+  // Check if all updates were successful
+
+  res.json({ success: jsonResult.every(result => result > 0) });
+});
+
 app.get("/globalmessages", async (req, res) => {
   const response = await fetch(baseURL + "/messages");
   /** @type {Message[]} */
   const messages = await response.json();
-  messages.sort((a, b) => (a.updatedAt > b.updatedAt ? 1 : -1));
+  messages.sort((a, b) => (a.editedAt > b.editedAt ? 1 : -1));
   res.json(messages);
 });
 
@@ -180,10 +218,10 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("message", async (data) => {
+  socket.on("message", async (/** @type {Message} */ data) => {
     console.info(`[INFO] Socket ${socket.id} sent: `, data);
     const currTime = Date.now();
-    const { userId, message, chatId, roomId } = data;
+    const { messageId, userId, roomId, content, createdAt, editedAt, isDeleted, statuses } = data;
 
     // Stop typing indicator when message is sent
     if (roomId && userId) {
@@ -206,12 +244,15 @@ io.on("connection", (socket) => {
 
     /** @type {Message} */
     const jsonBody = {
-      message: message,
-      userId: userId,
-      chatId: chatId,
-      createdAt: currTime,
-      updatedAt: currTime,
-      status: "sent",
+      messageId: messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      userId: userId || "anonymous",
+      roomId: roomId || "global",
+      content: content || "",
+      createdAt: createdAt || currTime,
+      editedAt: editedAt || null,
+      isDeleted: isDeleted || false,
+      statuses: statuses || [],
+      contentType: "text", // default to text for now
     };
     console.info("[INFO] Sending message to database: ", jsonBody);
     const response = await fetch(baseURL + "/messages", {
@@ -219,16 +260,21 @@ io.on("connection", (socket) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(jsonBody),
     });
-    console.debug("[DEBUG] Response received: ", response);
+    console.debug("[DEBUG] Response received: ", response.status);
     if (response.ok) {
-      jsonBody.status = "sent";
-      const jsonData = { error: null, message: jsonBody };
+      const dbMessage = await response.json();
+      console.info("[INFO] Message stored in database: ", dbMessage);
+
+      // Use the canonical DB message when broadcasting
+      const jsonData = { error: null, message: dbMessage };
       console.info("[INFO] Broadcasting message: ", jsonData);
 
       // Broadcast to specific room if roomId is provided
       if (roomId) {
         socket.to(roomId).emit("message", jsonData);
       }
+    } else {
+      console.error("[ERROR] Failed to store message in DB. Status:", response.status);
     }
   });
 
