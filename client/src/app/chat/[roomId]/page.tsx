@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import AppMessageLarge from "@/components/app-message-large";
 import { cn } from "@/lib/utils";
 import { useCompact } from "@/lib/compact-provider";
+import error from "next/error";
 
 interface TypingUser {
   userId: string;
@@ -48,10 +49,10 @@ export default function ChatRoom({ params }: { params: { roomId: string } }) {
     if (Notification.permission !== "granted") {
       Notification.requestPermission().then((result) => {
         console.log(result)
-        new Notification("New Message", { body: data.message?.message })
+        new Notification("New Message", { body: data.message?.content })
       })
     } else {
-      new Notification("New Message", { body: data.message?.message })
+      new Notification("New Message", { body: data.message?.content })
     }
   }
 
@@ -122,11 +123,42 @@ export default function ChatRoom({ params }: { params: { roomId: string } }) {
     }
   }, [messages, typingUsers]);
 
+  const markUnreadAsRead = () => {
+    // Placeholder for marking messages as read in the backend
+    console.log("Marking messages as read in room:", roomId);
+    // Implement API call to mark messages as read if needed
+    const unreadMessages = messages.filter(msg => msg.status !== "read");
+    const requestBody = unreadMessages.map(msg => {
+      return { messageId: msg.messageId, userId: userName, status: "read" }
+    });
+
+    fetchData("PATCH", "/messages/read", {
+      body: JSON.stringify({ statuses: requestBody })
+    }).then(response => {
+      if (response.status === 200) {
+        console.log("Marked messages as read");
+        // Update local message statuses to "read"
+        setMessages(prevMessages =>
+          prevMessages.map(msg => {
+            const tmp = requestBody.filter(um => um.messageId === msg.messageId);
+            msg.statuses = tmp.map(um => ({ userId: um.userId, status: "read", updatedAt: Date.now() }));
+            return msg;
+          })
+        );
+      } else {
+        console.error("Failed to mark messages as read");
+      }
+    }).catch(error => {
+      console.error("Error marking messages as read:", error);
+    });
+  }
+
   const onInputFocus = () => {
     document.title = "Nothing New";
     isInputFocus.current = true
     console.log("input is focused")
     setNumOfUnreadMessages(0)
+    markUnreadAsRead()
   }
 
   const onInputBlur = () => {
@@ -187,14 +219,25 @@ export default function ChatRoom({ params }: { params: { roomId: string } }) {
 
     socket.current.on("disconnect", (reason) => {
       console.error("Disconnected from server for the following reason: ", reason)
-      setMessages((prevMessages) => [{ message: "Disconnected for the following reason: " + reason, userId: "System" }, ...prevMessages])
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          messageId: `system-${Date.now()}`,
+          userId: "System",
+          content: "Disconnected for the following reason: " + reason,
+          contentType: "text",
+          createdAt: Date.now(),
+          roomId: roomId,
+          status: "sent",
+        },
+      ])
       // Clear typing indicators on disconnect
       setTypingUsers([]);
     })
 
     // get messages
     const data = async () => {
-      const headers = await fetchData("/messages?roomId=" + roomId);
+      const headers = await fetchData("GET", "/messages?roomId=" + roomId);
       let messages: Message[] = []
       if (headers.status === 200) {
         messages = await headers.json()
@@ -210,12 +253,7 @@ export default function ChatRoom({ params }: { params: { roomId: string } }) {
       }
       socket.current?.disconnect()
     }
-  }, [apiUrl])
-
-  // Clean up typing indicators when switching rooms
-  useEffect(() => {
-    stopTyping();
-  }, [roomId]);
+  }, [apiUrl, roomId])
 
   const handleSendMessage = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
@@ -229,10 +267,11 @@ export default function ChatRoom({ params }: { params: { roomId: string } }) {
 
     const messageObject: Message = {
       userId: userName,
-      message: userInput,
+      content: userInput,
       createdAt: Date.now(),
       roomId: roomId,
-    } as Message & { roomId?: string };
+      messageId: ""
+    };
     setMessages((prev) => [...prev, messageObject]);
     setUserInput("");
     shouldScroll.current = true;
@@ -309,19 +348,13 @@ export default function ChatRoom({ params }: { params: { roomId: string } }) {
           messages.map((msg, index) => (
             <AppMessage
               key={index}
-              message={msg.message}
-              date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
-              isMine={msg.userId === userName}
-              senderName={msg.userId}
-              senderId={msg.userId}
+              message={msg}
             />
           )) :
           messages.map((msg, index) => (
             <AppMessageLarge
               key={index}
-              message={msg.message}
-              date={new Date(msg.createdAt ?? Date.now()).toLocaleString()}
-              isMine={msg.userId === userName}
+              message={msg}
             />
           ))}
 

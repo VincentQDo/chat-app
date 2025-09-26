@@ -138,11 +138,30 @@ export default function GlobalChat() {
     }
   }, [messages, typingUsers]);
 
+const markUnreadAsRead = () => {
+    // Placeholder for marking messages as read in the backend
+    console.log("Marking messages as read in room:", "global");
+    // Implement API call to mark messages as read if needed
+    const unreadMessages = messages.filter(msg => msg.userId !== userName && !msg.statuses?.some(status => status.userId === userName && status.status === "read"));
+    console.log("Unread messages to mark as read:", unreadMessages);
+    const requestBody = unreadMessages.map(msg => {
+      return { messageId: msg.messageId, userId: userName, status: "read" }
+    });
+
+    if (requestBody.length === 0) {
+      console.log("No unread messages to mark as read");
+      return;
+    }
+
+    socket.current?.emit("read", { statuses: requestBody });
+  }
+
   const onInputFocus = () => {
     document.title = "Nothing New";
     isInputFocus.current = true
     console.log("input is focused")
     setNumOfUnreadMessages(0)
+    markUnreadAsRead();
   }
 
   const onInputBlur = () => {
@@ -180,6 +199,20 @@ export default function GlobalChat() {
         setMessages((prevMessages) => [...prevMessages, { ...data.message! }])
         sendNotification(data)
       }
+    })
+
+    socket.current.on("read", (data: any) => {
+      const updatedStatuses = data.success.statuses;
+      console.log("Read message event received:", updatedStatuses);
+      setMessages((prevMessages) =>
+        prevMessages.map(msg => {
+          if (updatedStatuses.some((status: any) => status.messageId === msg.messageId)) {
+            const newStatuses = updatedStatuses.filter((status: any) => status.messageId === msg.messageId);
+            return { ...msg, statuses: [...(msg.statuses || []), ...newStatuses] };
+          }
+          return msg;
+        })
+      );
     })
 
     // Typing indicator event listeners
@@ -220,7 +253,7 @@ export default function GlobalChat() {
 
     // get messages
     const data = async () => {
-      const headers = await fetchData("/globalmessages")
+      const headers = await fetchData("GET", "/globalmessages")
       let messages: Message[] = []
       if (headers.status === 200) {
         messages = await headers.json()
@@ -306,9 +339,6 @@ export default function GlobalChat() {
   }
 
   function handleKeyDownEvent(event: React.KeyboardEvent<HTMLTextAreaElement>): void {
-    // Mark that the input is focused (useful for notifications)
-    onInputFocus();
-
     // Send message on Enter (without Shift) on desktop. Allow Shift+Enter to insert a newline on desktop.
     if (!isMobile && event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
