@@ -40,12 +40,14 @@ router.patch("/status", async (req, res) => {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
-  statuses.forEach(status => {
-    if (!status.messageId || !status.userId || !status.status) {
-      res.status(400).json({ error: "Invalid request" });
-      return;
-    }
-  });
+
+  // Same check as the api call so maybe refactor later
+  if (!statuses.every(status => 'messageId' in status && 'userId' in status && 'status' in status)) {
+    res.status(400).json({ error: "Invalid status format" });
+    return;
+  }
+
+  console.log("[INFO] Marking messages as read", statuses);
   const result = await markMessagesAsReadPrepared(statuses);
   res.json(result);
 });

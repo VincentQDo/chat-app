@@ -16,5 +16,5 @@
  * @property {string} messageId - Unique identifier for the message
  * @property {string} userId - Identifier of the user associated with this status
  * @property {string} status - Status of the message for this user ('sent', 'delivered', 'read')
- * @property {number} updatedAt - Timestamp when the status was last updated (in milliseconds since epoch)
+ * @property {number} [updatedAt] - Timestamp when the status was last updated (in milliseconds since epoch)
  */

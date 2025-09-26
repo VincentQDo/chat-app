@@ -351,18 +351,21 @@ export function markMessagesAsReadPrepared(statuses) {
 
         let completed = 0;
         let hasError = false;
-
+        
+        console.log("[INFO] Starting batch status update for", statuses.length, "entries");
         statuses.forEach((status) => {
           stmt.run([status.messageId, status.userId, status.status, updatedAt], (err) => {
             completed++;
             if (err) hasError = true;
-
+            console.log("[INFO] Completed status update for", status.messageId, status.userId, status.status, err ? "ERROR:" + err : "");
             if (completed === statuses.length) {
               stmt.finalize();
               if (hasError) {
                 db.run("ROLLBACK", () => resolve(0));
+                console.log("[ERR] Transaction rolled back due to errors.");
               } else {
                 db.run("COMMIT", () => resolve(1));
+                console.log("[INFO] Transaction committed successfully.");
               }
             }
           });
