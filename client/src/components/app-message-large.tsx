@@ -24,7 +24,7 @@ export default function AppMessageLarge(params: { message: Message }) {
         <span className="text-xs text-muted-foreground whitespace-nowrap">
           {dateString}
         </span>
-        <AppMessageStatus status={params.message.status!} isMine={isMine} />
+        <AppMessageStatus status={params.message.statuses ?? []} isMine={isMine} />
       </div>
 
       {/* avatar (right for your message) */}
