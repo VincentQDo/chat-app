@@ -138,21 +138,17 @@ export default function GlobalChat() {
     }
   }, [messages, typingUsers]);
 
-const markUnreadAsRead = () => {
-    // Placeholder for marking messages as read in the backend
-    console.log("Marking messages as read in room:", "global");
-    // Implement API call to mark messages as read if needed
+  const markUnreadAsRead = () => {
     const unreadMessages = messages.filter(msg => msg.userId !== userName && !msg.statuses?.some(status => status.userId === userName && status.status === "read"));
-    console.log("Unread messages to mark as read:", unreadMessages);
     const requestBody = unreadMessages.map(msg => {
       return { messageId: msg.messageId, userId: userName, status: "read" }
     });
 
     if (requestBody.length === 0) {
-      console.log("No unread messages to mark as read");
       return;
     }
-
+    // After sending read receipt, wait for server to confirm and update statuses via "read" event
+    // Server will broadcast the updated statuses to all clients in the room, including this one
     socket.current?.emit("read", { statuses: requestBody });
   }
 
@@ -195,11 +191,26 @@ const markUnreadAsRead = () => {
     })
 
     socket.current.on("message", (data: WebsocketServerResponse) => {
+      console.log("New message event received:", data);
       if (data.message) {
         setMessages((prevMessages) => [...prevMessages, { ...data.message! }])
         sendNotification(data)
       }
     })
+
+    socket.current.on("delivered", (data: { success: { statuses: any[] } }) => {
+      const updatedStatuses = data.success.statuses;
+      console.log("Delivered message event received:", updatedStatuses);
+      if (updatedStatuses.length === 0) return;
+      setMessages((prevMessages) =>
+        prevMessages.map(msg => {
+          const updatedMessageStatuses = updatedStatuses.filter((status: any) => status.messageId === msg.messageId)
+          if (updatedMessageStatuses.length === 0) return msg;
+          msg.statuses = updatedMessageStatuses;
+          return msg;
+        })
+      );
+    });
 
     socket.current.on("read", (data: { success: { statuses: any[] } }) => {
       const updatedStatuses = data.success.statuses;
@@ -300,7 +311,9 @@ const markUnreadAsRead = () => {
     setUserInput("");
     shouldScroll.current = true;
     // optimistic emit; backend will be wired later
-    socket.current?.emit("message", messageObject);
+    setTimeout(() => {
+      socket.current?.emit("message", messageObject);
+    }, 5000);
   }
 
   const handleMessageScrolling = () => {
