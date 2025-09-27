@@ -201,15 +201,15 @@ const markUnreadAsRead = () => {
       }
     })
 
-    socket.current.on("read", (data: any) => {
+    socket.current.on("read", (data: { success: { statuses: any[] } }) => {
       const updatedStatuses = data.success.statuses;
       console.log("Read message event received:", updatedStatuses);
+      if (updatedStatuses.length === 0) return;
       setMessages((prevMessages) =>
         prevMessages.map(msg => {
-          if (updatedStatuses.some((status: any) => status.messageId === msg.messageId)) {
-            const newStatuses = updatedStatuses.filter((status: any) => status.messageId === msg.messageId);
-            return { ...msg, statuses: [...(msg.statuses || []), ...newStatuses] };
-          }
+          const updatedMessageStatuses = updatedStatuses.filter((status: any) => status.messageId === msg.messageId)
+          if (updatedMessageStatuses.length === 0) return msg;
+          msg.statuses = updatedMessageStatuses;
           return msg;
         })
       );

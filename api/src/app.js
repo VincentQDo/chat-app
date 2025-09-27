@@ -31,42 +31,6 @@ app.get("/authenticate", (req, res) => {
   res.send(true);
 });
 
-app.patch("/messages/read", async (req, res) => {
-  const { statuses } = req.body;
-
-  if (!Array.isArray(statuses)) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
-
-  if (!statuses.every(status => 'messageId' in status && 'userId' in status && 'status' in status)) {
-    res.status(400).json({ error: "Invalid status format" });
-    return;
-  }
-
-  statuses.forEach(status => {
-    status.status = MESSAGE_STATUS.READ;
-  });
-
-  // Update message statuses in the database
-  const result = await fetch(baseURL + "/messages/status", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ statuses }),
-  });
-
-  if (!result.ok) {
-    res.status(500).json({ error: "Failed to update message statuses" });
-    return;
-  }
-
-  const jsonResult = await result.json();
-  console.log("Status update results: ", jsonResult);
-  // Check if all updates were successful
-
-  res.json({ success: jsonResult });
-});
-
 app.get("/globalmessages", async (req, res) => {
   const response = await fetch(baseURL + "/messages");
   /** @type {Message[]} */
