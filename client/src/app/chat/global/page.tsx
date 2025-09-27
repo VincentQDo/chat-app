@@ -311,9 +311,7 @@ export default function GlobalChat() {
     setUserInput("");
     shouldScroll.current = true;
     // optimistic emit; backend will be wired later
-    setTimeout(() => {
-      socket.current?.emit("message", messageObject);
-    }, 5000);
+    socket.current?.emit("message", messageObject);
   }
 
   const handleMessageScrolling = () => {

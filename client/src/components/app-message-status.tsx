@@ -28,7 +28,7 @@ export default function AppMessageStatus({ status, isMine }: AppMessageStatusPro
 
   const sortedStatuses = [...status].sort((a, b) => (statusPriority[b.status] || 0) - (statusPriority[a.status] || 0));
   // Get the highest priority status
-  const config = STATUS_CONFIG[sortedStatuses[0]?.status];
+  const config = STATUS_CONFIG[sortedStatuses[0]?.status ?? "sent"];
 
   // If no valid status found, return null
   if (!config) return null;

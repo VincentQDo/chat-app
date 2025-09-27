@@ -279,7 +279,7 @@ io.on("connection", (socket) => {
       // Broadcast to specific room if roomId is provided
       if (roomId) {
         socket.to(roomId).emit("message", jsonData);
-        socket.emit("delivered", { success: { statuses: jsonData.message.statuses.map(status => ({ messageId: jsonData.message.messageId, userId: status.userId, status: status.status })) } });
+        socket.emit("delivered", { success: { statuses: jsonData.message.statuses.map(status => ({ messageId: jsonData.message.messageId, userId: status.userId, status: "delivered" })) } });
       }
     } else {
       console.error("[ERROR] Failed to store message in DB. Status:", response.status);
