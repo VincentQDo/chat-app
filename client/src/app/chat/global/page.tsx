@@ -138,11 +138,26 @@ export default function GlobalChat() {
     }
   }, [messages, typingUsers]);
 
+  const markUnreadAsRead = () => {
+    const unreadMessages = messages.filter(msg => msg.userId !== userName && !msg.statuses?.some(status => status.userId === userName && status.status === "read"));
+    const requestBody = unreadMessages.map(msg => {
+      return { messageId: msg.messageId, userId: userName, status: "read" }
+    });
+
+    if (requestBody.length === 0) {
+      return;
+    }
+    // After sending read receipt, wait for server to confirm and update statuses via "read" event
+    // Server will broadcast the updated statuses to all clients in the room, including this one
+    socket.current?.emit("read", { statuses: requestBody });
+  }
+
   const onInputFocus = () => {
     document.title = "Nothing New";
     isInputFocus.current = true
     console.log("input is focused")
     setNumOfUnreadMessages(0)
+    markUnreadAsRead();
   }
 
   const onInputBlur = () => {
@@ -176,10 +191,39 @@ export default function GlobalChat() {
     })
 
     socket.current.on("message", (data: WebsocketServerResponse) => {
+      console.log("New message event received:", data);
       if (data.message) {
         setMessages((prevMessages) => [...prevMessages, { ...data.message! }])
         sendNotification(data)
       }
+    })
+
+    socket.current.on("delivered", (data: { success: { statuses: any[] } }) => {
+      const updatedStatuses = data.success.statuses;
+      console.log("Delivered message event received:", updatedStatuses);
+      if (updatedStatuses.length === 0) return;
+      setMessages((prevMessages) =>
+        prevMessages.map(msg => {
+          const updatedMessageStatuses = updatedStatuses.filter((status: any) => status.messageId === msg.messageId)
+          if (updatedMessageStatuses.length === 0) return msg;
+          msg.statuses = updatedMessageStatuses;
+          return msg;
+        })
+      );
+    });
+
+    socket.current.on("read", (data: { success: { statuses: any[] } }) => {
+      const updatedStatuses = data.success.statuses;
+      console.log("Read message event received:", updatedStatuses);
+      if (updatedStatuses.length === 0) return;
+      setMessages((prevMessages) =>
+        prevMessages.map(msg => {
+          const updatedMessageStatuses = updatedStatuses.filter((status: any) => status.messageId === msg.messageId)
+          if (updatedMessageStatuses.length === 0) return msg;
+          msg.statuses = updatedMessageStatuses;
+          return msg;
+        })
+      );
     })
 
     // Typing indicator event listeners
@@ -220,7 +264,7 @@ export default function GlobalChat() {
 
     // get messages
     const data = async () => {
-      const headers = await fetchData("/globalmessages")
+      const headers = await fetchData("GET", "/globalmessages")
       let messages: Message[] = []
       if (headers.status === 200) {
         messages = await headers.json()
@@ -306,9 +350,6 @@ export default function GlobalChat() {
   }
 
   function handleKeyDownEvent(event: React.KeyboardEvent<HTMLTextAreaElement>): void {
-    // Mark that the input is focused (useful for notifications)
-    onInputFocus();
-
     // Send message on Enter (without Shift) on desktop. Allow Shift+Enter to insert a newline on desktop.
     if (!isMobile && event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -325,15 +366,13 @@ export default function GlobalChat() {
 
   return (
     <>
-      <AppSidebar />
-      <SidebarInset className="flex flex-col h-[calc(100dvh-1rem)]">
-        <header className='p-2 flex flex-shrink-0 justify-between'>
-          <div className='flex items-center'>
-            <SidebarTrigger></SidebarTrigger>
-            <h1 className='text-lg font-semibold'>Global Chat</h1>
-          </div>
-        </header>
-        <Separator className="flex-shrink-0" />
+      <header className='p-2 flex flex-shrink-0 justify-between'>
+        <div className='flex items-center'>
+          <SidebarTrigger></SidebarTrigger>
+          <h1 className='text-lg font-semibold'>Global Chat</h1>
+        </div>
+      </header>
+      <Separator className="flex-shrink-0" />
 
         {/* Messages container - this will be scrollable and take up remaining space */}
         <div className={cn("flex-1 overflow-y-auto p-4 min-h-0", { "space-y-4": !isCompact })} ref={messagesContainerRef} onScroll={handleMessageScrolling}>
@@ -351,37 +390,36 @@ export default function GlobalChat() {
               />
             ))}
 
-          {/* Typing indicator */}
-          {renderTypingIndicator()}
-        </div>
+        {/* Typing indicator */}
+        {renderTypingIndicator()}
+      </div>
 
-        {/* Input footer - this will stick to the bottom */}
-        <footer className='p-4 w-full flex-shrink-0 bg-background'>
-          <form onSubmit={handleSendMessage} className='flex gap-2'>
-            <Textarea
-              ref={textareaRef}
-              value={userInput}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDownEvent}
-              onBlur={onInputBlur}
-              onFocus={onInputFocus}
-              placeholder="Type your message here..."
-              className='w-full text-base resize-none rounded-md p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
-              rows={isMobile ? 1 : 3}
-              name='message'
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="self-end flex-shrink-0 h-8 w-8 rounded-full p-0"
-              disabled={!userInput.trim()}
-              aria-label="Send message"
-            >
-              <SendHorizontal />
-            </Button>
-          </form>
-        </footer>
-      </SidebarInset>
+      {/* Input footer - this will stick to the bottom */}
+      <footer className='p-4 w-full flex-shrink-0 bg-background'>
+        <form onSubmit={handleSendMessage} className='flex gap-2'>
+          <Textarea
+            ref={textareaRef}
+            value={userInput}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDownEvent}
+            onBlur={onInputBlur}
+            onFocus={onInputFocus}
+            placeholder="Type your message here..."
+            className='w-full text-base resize-none rounded-md p-2 min-h-[2.5rem] max-h-32 overflow-y-auto'
+            rows={isMobile ? 1 : 3}
+            name='message'
+          />
+          <Button
+            type="submit"
+            size="icon"
+            className="self-end flex-shrink-0 h-8 w-8 rounded-full p-0"
+            disabled={!userInput.trim()}
+            aria-label="Send message"
+          >
+            <SendHorizontal />
+          </Button>
+        </form>
+      </footer>
     </>
   );
 }

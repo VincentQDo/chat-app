@@ -6,9 +6,9 @@ export function getBackendBaseUrl() {
     }
 }
 
-export function fetchData(url: string, options?: RequestInit): Promise<Response> {
+export function fetchData(method: string, url: string, options?: RequestInit): Promise<Response> {
     return fetch(`${getBackendBaseUrl()}${url}`, {
-        method: "GET",
+        method: method,
         headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${localStorage.getItem("authToken")}`,

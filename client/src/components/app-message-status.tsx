@@ -1,9 +1,8 @@
+import { MessageStatus } from "@/models/models";
 import { CheckCheck } from "lucide-react";
 
-type MessageStatus = "sent" | "delivered" | "read";
-
 interface AppMessageStatusProps {
-  status: MessageStatus;
+  status: MessageStatus[];
   isMine: boolean;
 }
 
@@ -25,8 +24,13 @@ const STATUS_CONFIG = {
 export default function AppMessageStatus({ status, isMine }: AppMessageStatusProps) {
   if (!isMine) return null;
 
-  const config = STATUS_CONFIG[status];
+  const statusPriority = { read: 3, delivered: 2, sent: 1 };
 
+  const sortedStatuses = [...status].sort((a, b) => (statusPriority[b.status] || 0) - (statusPriority[a.status] || 0));
+  // Get the highest priority status
+  const config = STATUS_CONFIG[sortedStatuses[0]?.status ?? "sent"];
+
+  // If no valid status found, return null
   if (!config) return null;
 
   return (

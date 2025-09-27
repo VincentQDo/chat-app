@@ -7,9 +7,15 @@ export interface Message {
   editedAt?: number | null; // nullable
   isDeleted?: boolean;
   // Per-user statuses and convenience summary
-  statuses?: Array<{ userId: string; status: "sent" | "delivered" | "read"; updatedAt: number }>;
+  statuses?: Array<MessageStatus>;
   status?: "sent" | "delivered" | "read" | null; // sender's own status
   roomId?: string;
+}
+
+export interface MessageStatus {
+  userId: string;
+  status: "sent" | "delivered" | "read";
+  updatedAt?: number;
 }
 
 export interface User {

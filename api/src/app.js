@@ -31,33 +31,6 @@ app.get("/authenticate", (req, res) => {
   res.send(true);
 });
 
-app.patch("/messages/status", async (req, res) => {
-  const { statuses } = req.body;
-
-  if (!Array.isArray(statuses)) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
-
-  // Update message statuses in the database
-  const result = await fetch(baseURL + "/messages/status", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ statuses }),
-  });
-
-  if (!result.ok) {
-    res.status(500).json({ error: "Failed to update message statuses" });
-    return;
-  }
-
-  const jsonResult = await result.json();
-  console.log("Status update results: ", jsonResult);
-  // Check if all updates were successful
-
-  res.json({ success: jsonResult.every(result => result > 0) });
-});
-
 app.get("/globalmessages", async (req, res) => {
   const response = await fetch(baseURL + "/messages");
   /** @type {Message[]} */
@@ -218,6 +191,40 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("read", async (/** @type {{ statuses: any[] }} */ data) => {
+    const { statuses } = data;
+    console.info(`[INFO] Socket ${socket.id} read message: `, statuses);
+
+    if (!Array.isArray(statuses)) {
+      return;
+    }
+
+    if (!statuses.every(status => 'messageId' in status && 'userId' in status && 'status' in status)) {
+      return;
+    }
+
+    statuses.forEach(status => {
+      status.status = MESSAGE_STATUS.READ;
+    });
+
+    // Update message statuses in the database
+    const result = await fetch(baseURL + "/messages/status", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statuses: statuses }),
+    });
+
+    if (!result.ok) {
+      return;
+    }
+
+    const jsonResult = await result.json();
+    console.log("Status update results: ", jsonResult);
+    // Emit read receipt to all clients including sender
+    // Sender will ignore it if not needed
+    io.emit("read", { success: data });
+  });
+
   socket.on("message", async (/** @type {Message} */ data) => {
     console.info(`[INFO] Socket ${socket.id} sent: `, data);
     const currTime = Date.now();
@@ -272,6 +279,7 @@ io.on("connection", (socket) => {
       // Broadcast to specific room if roomId is provided
       if (roomId) {
         socket.to(roomId).emit("message", jsonData);
+        socket.emit("delivered", { success: { statuses: jsonData.message.statuses.map(status => ({ messageId: jsonData.message.messageId, userId: status.userId, status: "delivered" })) } });
       }
     } else {
       console.error("[ERROR] Failed to store message in DB. Status:", response.status);

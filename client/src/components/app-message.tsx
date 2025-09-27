@@ -60,7 +60,7 @@ export default function AppMessage(params: { message: Message }) {
           </span>
           <span className="text-xs text-muted-foreground">
             {dateString}
-            <AppMessageStatus status={message.status!} isMine={isMine} />
+            <AppMessageStatus status={message.statuses ?? []} isMine={isMine} />
 
           </span>
         </div>

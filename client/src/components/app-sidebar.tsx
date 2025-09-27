@@ -20,22 +20,29 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenu>
-            <SidebarGroup>
-              <SidebarGroupLabel>Active Chats</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    className="data-[slot=sidebar-menu-button]:!p-1.5 text-base"
-                  >
-                    <span>Global Chat</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarMenu>
-        </SidebarGroup>
+        <SidebarMenu>
+          <SidebarGroup>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                className="data-[slot=sidebar-menu-button]:!p-1.5 text-base"
+              >
+                <span>New Chat <PlusIcon className="inline-block w-4 h-4 ml-1" /></span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarGroup>
+          <SidebarGroup>
+            <SidebarGroupLabel>Active Chats</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="data-[slot=sidebar-menu-button]:!p-1.5 text-base"
+                >
+                  <span>Global Chat</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

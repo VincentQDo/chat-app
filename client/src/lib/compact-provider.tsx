@@ -20,10 +20,10 @@ export function CompactProvider({
         console.log("Retrieved isCompact from localStorage:", stored);
         return JSON.parse(stored);
       } catch (e) {
-        return false;
+        return true; // error fallback
       }
     }
-    return false;
+    return true; // default value
   });
 
   // Save to storage whenever isCompact changes
