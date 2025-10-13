@@ -79,6 +79,10 @@ web_modules/
 .env.production.local
 .env.local
 
+# nodemon environment variables file
+.env.nodemon
+nodemon.json
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

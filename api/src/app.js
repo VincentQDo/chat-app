@@ -8,7 +8,11 @@ import {
   websocketVerifyToken,
 } from "./utilities/token-utilities.js";
 
-
+const API_KEY = process.env.API_KEY || "";
+if (!API_KEY) {
+  console.warn("[WARN] No API_KEY set in environment variables.");
+  throw new Error("API_KEY is required");
+}
 /**
  * Copy and pasted from database/db/database.js will need refactoring later
  * to avoid circular dependencies
@@ -21,7 +25,8 @@ export const MESSAGE_STATUS = Object.freeze({
 
 // Create an Express application
 
-const baseURL = process.env.DB_URL;
+const baseURL = process.env.DB_URL || "http://localhost:8000";
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -32,11 +37,26 @@ app.get("/authenticate", (req, res) => {
 });
 
 app.get("/globalmessages", async (req, res) => {
-  const response = await fetch(baseURL + "/messages");
-  /** @type {Message[]} */
-  const messages = await response.json();
-  messages.sort((a, b) => (a.editedAt > b.editedAt ? 1 : -1));
-  res.json(messages);
+  try {
+    const response = await fetch(baseURL + "/messages", {
+      method: "GET",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+    });
+    if (!response.ok) {
+      console.error("Failed to fetch messages from DB", {
+        status: response.status,
+        statusText: response.statusText,
+      });
+      return res.status(500).json({ error: "Failed to fetch messages" });
+    }
+    /** @type {Message[]} */
+    const messages = await response.json();
+    messages.sort((a, b) => (a.editedAt > b.editedAt ? 1 : -1));
+    res.json(messages);
+  } catch (error) {
+    console.error("[ERROR] Failed to fetch global messages:", error);
+    return res.status(500).json({ error: "Failed to fetch global messages" });
+  }
 });
 
 // Define a simple route for HTTP
@@ -59,13 +79,15 @@ const typingUsers = new Map(); // Map<roomId, Set<{socketId, userId}>>
 // Helper function to clean up typing indicators for a socket
 const cleanupTypingForSocket = (socketId) => {
   for (const [roomId, users] of typingUsers.entries()) {
-    const userToRemove = Array.from(users).find(user => user.socketId === socketId);
+    const userToRemove = Array.from(users).find(
+      (user) => user.socketId === socketId
+    );
     if (userToRemove) {
       users.delete(userToRemove);
       // Broadcast typing stop to room
-      io.to(roomId).emit('typing:stop', {
+      io.to(roomId).emit("typing:stop", {
         userId: userToRemove.userId,
-        roomId: roomId
+        roomId: roomId,
       });
       // Clean up empty rooms
       if (users.size === 0) {
@@ -88,7 +110,7 @@ const addTypingUser = (roomId, socketId, userId) => {
   // e.g., Map<userId, socketId>
   // But that would require more changes in the data structure
   // For now, we keep it simple
-  const existingUser = Array.from(users).find(user => user.userId === userId);
+  const existingUser = Array.from(users).find((user) => user.userId === userId);
   if (!existingUser) {
     users.add({ socketId, userId });
     return true; // New typing user added
@@ -101,8 +123,8 @@ const removeTypingUser = (roomId, socketId, userId) => {
   if (!typingUsers.has(roomId)) return false;
 
   const users = typingUsers.get(roomId);
-  const userToRemove = Array.from(users).find(user =>
-    user.socketId === socketId && user.userId === userId
+  const userToRemove = Array.from(users).find(
+    (user) => user.socketId === socketId && user.userId === userId
   );
 
   if (userToRemove) {
@@ -134,23 +156,33 @@ io.on("connection", (socket) => {
   });
 
   // Handle joining rooms (for room-based typing indicators)
-  socket.on('join:room', (/** @type {{ roomId: string, userId: string }} */ data) => {
-    const { roomId, userId } = data;
-    socket.join(roomId);
-    console.info(`[INFO] Socket ${socket.id} with userId ${userId} joined room: ${roomId}`);
-  });
+  socket.on(
+    "join:room",
+    (/** @type {{ roomId: string, userId: string }} */ data) => {
+      const { roomId, userId } = data;
+      socket.join(roomId);
+      console.info(
+        `[INFO] Socket ${socket.id} with userId ${userId} joined room: ${roomId}`
+      );
+    }
+  );
 
   // Handle leaving rooms
-  socket.on('leave:room', (/** @type {{ roomId: string, userId: string }} */ data) => {
-    const { roomId, userId } = data;
-    socket.leave(roomId);
-    // Clean up any typing indicators for this user in this room
-    cleanupTypingForSocket(socket.id);
-    console.info(`[INFO] Socket ${socket.id} with userId ${userId} left room: ${roomId}`);
-  });
+  socket.on(
+    "leave:room",
+    (/** @type {{ roomId: string, userId: string }} */ data) => {
+      const { roomId, userId } = data;
+      socket.leave(roomId);
+      // Clean up any typing indicators for this user in this room
+      cleanupTypingForSocket(socket.id);
+      console.info(
+        `[INFO] Socket ${socket.id} with userId ${userId} left room: ${roomId}`
+      );
+    }
+  );
 
   // Handle typing start
-  socket.on('typing:start', (data) => {
+  socket.on("typing:start", (data) => {
     const { roomId, userId } = data;
     console.info(`[INFO] User ${userId} started typing in room ${roomId}`);
 
@@ -159,15 +191,15 @@ io.on("connection", (socket) => {
 
     if (isNewTyper) {
       // Broadcast to room (excluding sender)
-      socket.to(roomId).emit('typing:start', {
+      socket.to(roomId).emit("typing:start", {
         userId: userId,
-        roomId: roomId
+        roomId: roomId,
       });
     }
   });
 
   // Handle typing stop
-  socket.on('typing:stop', (data) => {
+  socket.on("typing:stop", (data) => {
     const { roomId, userId } = data;
     console.info(`[INFO] User ${userId} stopped typing in room ${roomId}`);
 
@@ -176,16 +208,16 @@ io.on("connection", (socket) => {
 
     if (wasTyping) {
       // Broadcast to room (excluding sender)
-      socket.to(roomId).emit('typing:stop', {
+      socket.to(roomId).emit("typing:stop", {
         userId: userId,
-        roomId: roomId
+        roomId: roomId,
       });
 
       // For global chat (backward compatibility)
-      if (roomId === 'global') {
-        socket.broadcast.emit('typing:stop', {
+      if (roomId === "global") {
+        socket.broadcast.emit("typing:stop", {
           userId: userId,
-          roomId: roomId
+          roomId: roomId,
         });
       }
     }
@@ -199,18 +231,23 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (!statuses.every(status => 'messageId' in status && 'userId' in status && 'status' in status)) {
+    if (
+      !statuses.every(
+        (status) =>
+          "messageId" in status && "userId" in status && "status" in status
+      )
+    ) {
       return;
     }
 
-    statuses.forEach(status => {
+    statuses.forEach((status) => {
       status.status = MESSAGE_STATUS.READ;
     });
 
     // Update message statuses in the database
     const result = await fetch(baseURL + "/messages/status", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
       body: JSON.stringify({ statuses: statuses }),
     });
 
@@ -228,22 +265,31 @@ io.on("connection", (socket) => {
   socket.on("message", async (/** @type {Message} */ data) => {
     console.info(`[INFO] Socket ${socket.id} sent: `, data);
     const currTime = Date.now();
-    const { messageId, userId, roomId, content, createdAt, editedAt, isDeleted, statuses } = data;
+    const {
+      messageId,
+      userId,
+      roomId,
+      content,
+      createdAt,
+      editedAt,
+      isDeleted,
+      statuses,
+    } = data;
 
     // Stop typing indicator when message is sent
     if (roomId && userId) {
       const wasTyping = removeTypingUser(roomId, socket.id, userId);
       if (wasTyping) {
-        socket.to(roomId).emit('typing:stop', {
+        socket.to(roomId).emit("typing:stop", {
           userId: userId,
-          roomId: roomId
+          roomId: roomId,
         });
 
         // For global chat (backward compatibility)
-        if (roomId === 'global') {
-          socket.broadcast.emit('typing:stop', {
+        if (roomId === "global") {
+          socket.broadcast.emit("typing:stop", {
             userId: userId,
-            roomId: roomId
+            roomId: roomId,
           });
         }
       }
@@ -251,7 +297,8 @@ io.on("connection", (socket) => {
 
     /** @type {Message} */
     const jsonBody = {
-      messageId: messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      messageId:
+        messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       userId: userId || "anonymous",
       roomId: roomId || "global",
       content: content || "",
@@ -264,7 +311,7 @@ io.on("connection", (socket) => {
     console.info("[INFO] Sending message to database: ", jsonBody);
     const response = await fetch(baseURL + "/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
       body: JSON.stringify(jsonBody),
     });
     console.debug("[DEBUG] Response received: ", response.status);
@@ -279,10 +326,21 @@ io.on("connection", (socket) => {
       // Broadcast to specific room if roomId is provided
       if (roomId) {
         socket.to(roomId).emit("message", jsonData);
-        socket.emit("delivered", { success: { statuses: jsonData.message.statuses.map(status => ({ messageId: jsonData.message.messageId, userId: status.userId, status: "delivered" })) } });
+        socket.emit("delivered", {
+          success: {
+            statuses: jsonData.message.statuses.map((status) => ({
+              messageId: jsonData.message.messageId,
+              userId: status.userId,
+              status: "delivered",
+            })),
+          },
+        });
       }
     } else {
-      console.error("[ERROR] Failed to store message in DB. Status:", response.status);
+      console.error(
+        "[ERROR] Failed to store message in DB. Status:",
+        response.status
+      );
     }
   });
 
@@ -299,13 +357,13 @@ io.on("connection", (socket) => {
       message: {
         users: updatedConnectedSockets.size,
         // @ts-ignore
-        userId: socket.user?.uid || socket.id // Include disconnected user info if available
+        userId: socket.user?.uid || socket.id, // Include disconnected user info if available
       },
     });
   });
 
   // Handle errors
-  socket.on('error', (error) => {
+  socket.on("error", (error) => {
     console.error(`[ERROR] Socket ${socket.id} error:`, error);
     // Clean up typing indicators on error
     cleanupTypingForSocket(socket.id);
