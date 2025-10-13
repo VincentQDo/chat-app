@@ -1,13 +1,12 @@
 import express from "express";
 import messageRouter from "./routes/messages.js";
 
-if (process.env.NODE_ENV !== "production") {
-  await import("dotenv/config");
-}
-
 const app = express();
 const PORT = process.env.PORT || 8000;
 const API_KEY = process.env.API_KEY || "";
+if (process.env.NODE_ENV !== "production") {
+  console.log("API_KEY:", API_KEY); // --- IGNORE ---
+}
 
 app.use(express.json());
 

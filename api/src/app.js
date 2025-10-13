@@ -8,9 +8,6 @@ import {
   websocketVerifyToken,
 } from "./utilities/token-utilities.js";
 
-if (process.env.NODE_ENV !== "production") {
-  await import("dotenv/config");
-}
 const API_KEY = process.env.API_KEY || "";
 if (!API_KEY) {
   console.warn("[WARN] No API_KEY set in environment variables.");
@@ -28,7 +25,7 @@ export const MESSAGE_STATUS = Object.freeze({
 
 // Create an Express application
 
-const baseURL = process.env.DB_URL;
+const baseURL = process.env.DB_URL || "http://localhost:8000";
 
 const app = express();
 app.use(cors());
@@ -40,21 +37,26 @@ app.get("/authenticate", (req, res) => {
 });
 
 app.get("/globalmessages", async (req, res) => {
-  const response = await fetch(baseURL + "/messages", {
-    method: "GET",
-    headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
-  });
-  if (!response.ok) {
-    console.error("Failed to fetch messages from DB", {
-      status: response.status,
-      statusText: response.statusText,
+  try {
+    const response = await fetch(baseURL + "/messages", {
+      method: "GET",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
     });
-    return res.status(500).json({ error: "Failed to fetch messages" });
+    if (!response.ok) {
+      console.error("Failed to fetch messages from DB", {
+        status: response.status,
+        statusText: response.statusText,
+      });
+      return res.status(500).json({ error: "Failed to fetch messages" });
+    }
+    /** @type {Message[]} */
+    const messages = await response.json();
+    messages.sort((a, b) => (a.editedAt > b.editedAt ? 1 : -1));
+    res.json(messages);
+  } catch (error) {
+    console.error("[ERROR] Failed to fetch global messages:", error);
+    return res.status(500).json({ error: "Failed to fetch global messages" });
   }
-  /** @type {Message[]} */
-  const messages = await response.json();
-  messages.sort((a, b) => (a.editedAt > b.editedAt ? 1 : -1));
-  res.json(messages);
 });
 
 // Define a simple route for HTTP
