@@ -11,7 +11,11 @@ import {
 if (process.env.NODE_ENV !== "production") {
   await import("dotenv/config");
 }
-
+const API_KEY = process.env.API_KEY || "";
+if (!API_KEY) {
+  console.warn("[WARN] No API_KEY set in environment variables.");
+  throw new Error("API_KEY is required");
+}
 /**
  * Copy and pasted from database/db/database.js will need refactoring later
  * to avoid circular dependencies
@@ -25,7 +29,7 @@ export const MESSAGE_STATUS = Object.freeze({
 // Create an Express application
 
 const baseURL = process.env.DB_URL;
-const apiKey = process.env.API_KEY || "";
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -38,7 +42,7 @@ app.get("/authenticate", (req, res) => {
 app.get("/globalmessages", async (req, res) => {
   const response = await fetch(baseURL + "/messages", {
     method: "GET",
-    headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+    headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
   });
   if (!response.ok) {
     console.error("Failed to fetch messages from DB", {
@@ -241,7 +245,7 @@ io.on("connection", (socket) => {
     // Update message statuses in the database
     const result = await fetch(baseURL + "/messages/status", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
       body: JSON.stringify({ statuses: statuses }),
     });
 
@@ -305,7 +309,7 @@ io.on("connection", (socket) => {
     console.info("[INFO] Sending message to database: ", jsonBody);
     const response = await fetch(baseURL + "/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
       body: JSON.stringify(jsonBody),
     });
     console.debug("[DEBUG] Response received: ", response.status);
