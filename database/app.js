@@ -1,5 +1,6 @@
 import express from "express";
 import messageRouter from "./routes/messages.js";
+import roomsRouter from "./routes/rooms.js";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -36,6 +37,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/messages", messageRouter);
+app.use("/rooms", roomsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

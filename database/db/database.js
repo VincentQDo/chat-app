@@ -4,6 +4,7 @@ import fs from "fs";
 import sqlite from "sqlite3";
 import path from "path";
 import { MigrationManager } from "./migration-manager.js";
+import { randomUUID } from "crypto";
 
 const DATA_DIR = process.env.DB_DIR || path.resolve(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "data.db");
@@ -69,45 +70,75 @@ export function addMessage(payload) {
   }
 
   // generate a simple unique id if not provided
-  const messageId = payload.messageId || `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const messageId =
+    payload.messageId ||
+    `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
   const sql = `
     INSERT INTO messages(messageId, roomId, userId, content, contentType, createdAt, editedAt, isDeleted)
     VALUES(?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  console.info("Inserting message into database", { messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted });
+  console.info("Inserting message into database", {
+    messageId,
+    roomId,
+    userId,
+    incomingMessage,
+    contentType,
+    createdAt,
+    editedAt,
+    isDeleted,
+  });
 
   return new Promise((resolve) => {
-    db.run(sql, [messageId, roomId, userId, incomingMessage, contentType, createdAt, editedAt, isDeleted], function (err) {
-      if (err) {
-        console.error("DB insert error:", err.message);
-        resolve(0);
-      } else {
-        console.log("Message inserted", messageId);
-        // Insert initial status row for the sender into message_status table
-        const updatedAt = Date.now();
-        const statusSql = `INSERT INTO message_status(messageId, userId, status, updatedAt)
+    db.run(
+      sql,
+      [
+        messageId,
+        roomId,
+        userId,
+        incomingMessage,
+        contentType,
+        createdAt,
+        editedAt,
+        isDeleted,
+      ],
+      function (err) {
+        if (err) {
+          console.error("DB insert error:", err.message);
+          resolve(0);
+        } else {
+          console.log("Message inserted", messageId);
+          // Insert initial status row for the sender into message_status table
+          const updatedAt = Date.now();
+          const statusSql = `INSERT INTO message_status(messageId, userId, status, updatedAt)
           VALUES(?, ?, ?, ?)
           ON CONFLICT(messageId, userId) DO UPDATE SET status = excluded.status, updatedAt = excluded.updatedAt`;
 
-        db.run(statusSql, [messageId, userId, status, updatedAt], async (statusErr) => {
-          if (statusErr) {
-            console.error("DB insert status error:", statusErr.message);
-            resolve(0);
-          } else {
-            console.log(`Initial message status set for messageId ${messageId}, userId ${userId}`);
-            try {
-              const combined = await getMessageWithStatuses(messageId);
-              resolve(combined);
-            } catch (e) {
-              console.error(e);
-              resolve(0);
+          db.run(
+            statusSql,
+            [messageId, userId, status, updatedAt],
+            async (statusErr) => {
+              if (statusErr) {
+                console.error("DB insert status error:", statusErr.message);
+                resolve(0);
+              } else {
+                console.log(
+                  `Initial message status set for messageId ${messageId}, userId ${userId}`
+                );
+                try {
+                  const combined = await getMessageWithStatuses(messageId);
+                  resolve(combined);
+                } catch (e) {
+                  console.error(e);
+                  resolve(0);
+                }
+              }
             }
-          }
-        });
+          );
+        }
       }
-    });
+    );
   });
 }
 
@@ -143,7 +174,7 @@ export function getAllMessages(limit = 100, offset = 0, roomId = null) {
   console.log(
     "Fetching messages with the following limit and offset:",
     lim,
-    off,
+    off
   );
 
   return new Promise((resolve, reject) => {
@@ -186,14 +217,22 @@ export function getAllMessages(limit = 100, offset = 0, roomId = null) {
         const statusMap = new Map();
         for (const s of statusRows || []) {
           if (!statusMap.has(s.messageId)) statusMap.set(s.messageId, []);
-          statusMap.get(s.messageId).push({ userId: s.userId, status: s.status, updatedAt: s.updatedAt });
+          statusMap.get(s.messageId).push({
+            userId: s.userId,
+            status: s.status,
+            updatedAt: s.updatedAt,
+          });
         }
 
         // Combine
         const combined = msgs.map((m) => {
           const statuses = statusMap.get(m.messageId) || [];
           const senderStatusRow = statuses.find((s) => s.userId === m.userId);
-          return { ...m, statuses, status: senderStatusRow ? senderStatusRow.status : null };
+          return {
+            ...m,
+            statuses,
+            status: senderStatusRow ? senderStatusRow.status : null,
+          };
         });
 
         resolve(combined);
@@ -208,14 +247,18 @@ export function getAllMessages(limit = 100, offset = 0, roomId = null) {
  */
 export function getMessageById(messageId) {
   return new Promise((resolve, reject) => {
-    db.get("SELECT * FROM messages WHERE messageId = ?", [messageId], (err, row) => {
-      if (err) {
-        console.error(err);
-        reject(err);
-      } else {
-        resolve(row ?? null);
+    db.get(
+      "SELECT * FROM messages WHERE messageId = ?",
+      [messageId],
+      (err, row) => {
+        if (err) {
+          console.error(err);
+          reject(err);
+        } else {
+          resolve(row ?? null);
+        }
       }
-    });
+    );
   });
 }
 
@@ -239,13 +282,21 @@ export async function getMessageWithStatuses(messageId) {
           console.error(err);
           reject(err);
         } else {
-          const statuses = (/** @type {{userId: string, status: string, updatedAt: number}[]} */ rows || []);
+          const statuses =
+            /** @type {{userId: string, status: string, updatedAt: number}[]} */ rows ||
+            [];
           // determine sender status (status for the original userId)
-          const senderStatusRow = statuses.find((s) => s.userId === message.userId);
-          const combined = { ...message, statuses, status: senderStatusRow ? senderStatusRow.status : null };
+          const senderStatusRow = statuses.find(
+            (s) => s.userId === message.userId
+          );
+          const combined = {
+            ...message,
+            statuses,
+            status: senderStatusRow ? senderStatusRow.status : null,
+          };
           resolve(combined);
         }
-      },
+      }
     );
   });
 }
@@ -287,7 +338,7 @@ export function searchMessages(q, limit, offset) {
         } else {
           resolve(rows);
         }
-      },
+      }
     );
   });
 }
@@ -330,7 +381,7 @@ export function editMessage(messageId, newContent) {
  */
 export function markMessagesAsReadPrepared(statuses) {
   const updatedAt = Date.now();
-  
+
   if (statuses.length === 0) {
     return Promise.resolve(1);
   }
@@ -353,21 +404,141 @@ export function markMessagesAsReadPrepared(statuses) {
         let hasError = false;
 
         statuses.forEach((status) => {
-          stmt.run([status.messageId, status.userId, status.status, updatedAt], (err) => {
-            completed++;
-            if (err) hasError = true;
+          stmt.run(
+            [status.messageId, status.userId, status.status, updatedAt],
+            (err) => {
+              completed++;
+              if (err) hasError = true;
 
-            if (completed === statuses.length) {
-              stmt.finalize();
-              if (hasError) {
-                db.run("ROLLBACK", () => resolve(0));
-              } else {
-                db.run("COMMIT", () => resolve(1));
+              if (completed === statuses.length) {
+                stmt.finalize();
+                if (hasError) {
+                  db.run("ROLLBACK", () => resolve(0));
+                } else {
+                  db.run("COMMIT", () => resolve(1));
+                }
               }
             }
-          });
+          );
         });
       });
+    });
+  });
+}
+
+/**
+ *
+ * @param {string} userId
+ * @returns {Promise<any[]>}
+ */
+export function getRoomsByUserId(userId) {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT roomId, joinedAt FROM room_members WHERE userId LIKE ?`;
+    const like = `%${escapeLike(userId)}%`;
+    db.all(
+      sql,
+      like,
+      (err, /** @type {{roomId: string, joinedAt: number}[]} */ rows) => {
+        if (err) {
+          console.log(`Rooms fetched for userId ${userId}: ${rows.length}`);
+          console.error(err);
+          reject(err);
+        } else {
+          console.log(`Rooms fetched for userId ${userId}: ${rows.length}`);
+          resolve(rows);
+        }
+      }
+    );
+  });
+}
+
+/**
+ *
+ * @param {string} roomId
+ * @returns {Promise<any|null>}
+ */
+export function getRoomMetadata(roomId) {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT * FROM rooms WHERE roomId = ?`;
+    db.get(sql, [roomId], (err, row) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      } else {
+        resolve(row || null);
+      }
+    });
+  });
+}
+
+export function addParticipantToRoom(roomId, userId) {
+  const joinedAt = Date.now();
+  const sql = `INSERT INTO room_members (roomId, userId, joinedAt) VALUES (?, ?, ?)`;
+  return new Promise((resolve, reject) => {
+    db.run(sql, [roomId, userId, joinedAt], function (err) {
+      if (err) {
+        console.error("Error updating room participants: ", err);
+        reject(0);
+      } else {
+        console.log(`Participant added to room: ${this.changes}`);
+        resolve(1);
+      }
+    });
+  });
+}
+
+export function createRoom(name, userId, isPrivate = false) {
+  const roomId = randomUUID();
+  const createdAt = Date.now();
+  const updatedAt = createdAt;
+  const createdBy = userId;
+  const isDeleted = false;
+  const sql = `INSERT INTO rooms (roomId, name, createdBy, isPrivate, isDeleted, createdAt, updatedAt)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  return new Promise((resolve, reject) => {
+    db.run(
+      sql,
+      [roomId, name, createdBy, isPrivate, isDeleted, createdAt, updatedAt],
+      function (err) {
+        if (err) {
+          console.error(err);
+          reject(0);
+        } else {
+          console.log(`Room created: ${this.changes}`);
+          resolve(roomId);
+        }
+      }
+    );
+  });
+}
+
+export function deleteRoom(roomId) {
+  const sql = `DELETE FROM rooms WHERE roomId = ?`;
+  return new Promise((resolve, reject) => {
+    db.run(sql, [roomId], function (err) {
+      if (err) {
+        console.error(err);
+        reject(0);
+      } else {
+        console.log(`Room deleted: ${this.changes}`);
+        resolve(1);
+      }
+    });
+  });
+}
+
+export function updateRoomName(roomId, newName) {
+  const updatedAt = Date.now();
+  const sql = `UPDATE rooms SET name = ?, updatedAt = ? WHERE roomId = ?`;
+  return new Promise((resolve, reject) => {
+    db.run(sql, [newName, updatedAt, roomId], function (err) {
+      if (err) {
+        console.error(err);
+        reject(0);
+      } else {
+        console.log(`Room updated: ${this.changes}`);
+        resolve(1);
+      }
     });
   });
 }
