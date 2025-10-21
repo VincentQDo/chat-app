@@ -1,6 +1,8 @@
 import express from "express";
 import messageRouter from "./routes/messages.js";
 import roomsRouter from "./routes/rooms.js";
+import usersRouter from "./routes/users.js";
+import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -9,6 +11,7 @@ if (process.env.NODE_ENV !== "production") {
   console.log("API_KEY:", API_KEY); // --- IGNORE ---
 }
 
+app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -38,6 +41,7 @@ app.use((req, res, next) => {
 
 app.use("/messages", messageRouter);
 app.use("/rooms", roomsRouter);
+app.use("/users", usersRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

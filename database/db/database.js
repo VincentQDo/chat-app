@@ -26,6 +26,12 @@ const db = new sqlite.Database(DB_FILE, (err) => {
   } else {
     console.log("✅ DB connection established");
   }
+
+  db.run("PRAGMA foreign_keys = ON", (fkErr) => {
+    if (fkErr) {
+      console.error("❌ Failed to enable foreign keys:", fkErr.message);
+    }
+  });
 });
 
 // Initialize database with migrations
@@ -426,6 +432,54 @@ export function markMessagesAsReadPrepared(statuses) {
   });
 }
 
+export function addUser(userId, email, displayName) {
+  const createdAt = Date.now();
+  const sql = `INSERT INTO users (userId, email, displayName, createdAt, updatedAt)
+               VALUES (?, ?, ?, ?, ?)`;
+  return new Promise((resolve, reject) => {
+    db.run(
+      sql,
+      [userId, email, displayName, createdAt, createdAt],
+      function (err) {
+        if (err) {
+          console.error(err);
+          reject(0);
+        } else {
+          console.log(`User added: ${this.changes}`);
+          resolve({ userId, email, displayName, createdAt });
+        }
+      }
+    );
+  });
+}
+
+export function modifyUser(userId, email, displayName, photoURL) {
+  const updatedAt = Date.now();
+  const sql = `
+    UPDATE users
+    SET email = ?, displayName = ?, photoURL = ?, updatedAt = ?
+    WHERE userId = ?
+  `;
+  return new Promise((resolve, reject) => {
+    db.run(
+      sql,
+      [email, displayName, photoURL, updatedAt, userId],
+      function (err) {
+        if (err) {
+          console.error(err);
+          reject(err);
+        } else if (this.changes === 0) {
+          console.log(`No user found with userId: ${userId}`);
+          resolve(-1);
+        } else {
+          console.log(`User updated: ${this.changes} row(s)`);
+          resolve(this.changes);
+        }
+      }
+    );
+  });
+}
+
 /**
  *
  * @param {string} userId
@@ -521,7 +575,7 @@ export function deleteRoom(roomId) {
         reject(0);
       } else {
         console.log(`Room deleted: ${this.changes}`);
-        resolve(1);
+        resolve(this.changes);
       }
     });
   });
