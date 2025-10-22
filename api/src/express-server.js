@@ -10,8 +10,47 @@ export default function createExpressApp(baseURL, API_KEY) {
   app.use(bodyParser.json());
   app.use(verifyToken);
 
-  app.get("/authenticate", (req, res) => {
-    res.send(true);
+  // Since we are using a separate service for authentication,
+  // We can grab data from the token and just create the user if not exist in our DB
+  app.get("/authenticate", async (req, res) => {
+    /** @type {import("firebase-admin/lib/auth/token-verifier.js").DecodedIdToken} */
+    // @ts-ignore
+    const user = req.user;
+    const { uid, email, name, picture } = user;
+    console.log("[INFO] Authenticating user:", { uid, email, name });
+    // Check if user exists in our DB, if not create it
+    let response = await fetch(baseURL + "/users/" + uid, {
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+    });
+    if (response.status === 404) {
+      // User does not exist, create it
+      const createResponse = await fetch(baseURL + "/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+        body: JSON.stringify({
+          userId: uid,
+          email: email,
+          displayName: name,
+          photoURL: picture,
+        }),
+      });
+      if (!createResponse.ok) {
+        console.error("Failed to create user in DB", {
+          status: createResponse.status,
+          statusText: createResponse.statusText,
+        });
+        return res.status(500).json({ error: "Failed to create user" });
+      }
+
+      console.log("[INFO] Created new user in DB:", uid);
+      // Fetch the newly created user
+      response = await fetch(baseURL + "/users/" + uid, {
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+      });
+    }
+
+    const existingUser = await response.json();
+    return res.json(existingUser);
   });
 
   app.get("/globalmessages", async (req, res) => {
@@ -36,6 +75,15 @@ export default function createExpressApp(baseURL, API_KEY) {
       return res.status(500).json({ error: "Failed to fetch global messages" });
     }
   });
+
+  // Edit user
+  // Get user info
+  // Create room
+  // Rename room
+  // Join room
+  // Add participant to room
+  // Remove participant from room
+  // Delete room
 
   return app;
 }

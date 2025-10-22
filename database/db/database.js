@@ -96,7 +96,7 @@ export function addMessage(payload) {
     isDeleted,
   });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     db.run(
       sql,
       [
@@ -112,7 +112,7 @@ export function addMessage(payload) {
       function (err) {
         if (err) {
           console.error("DB insert error:", err.message);
-          resolve(0);
+          reject(0);
         } else {
           console.log("Message inserted", messageId);
           // Insert initial status row for the sender into message_status table
@@ -127,23 +127,23 @@ export function addMessage(payload) {
             async (statusErr) => {
               if (statusErr) {
                 console.error("DB insert status error:", statusErr.message);
-                resolve(0);
+                reject(0);
               } else {
                 console.log(
-                  `Initial message status set for messageId ${messageId}, userId ${userId}`,
+                  `Initial message status set for messageId ${messageId}, userId ${userId}`
                 );
                 try {
                   const combined = await getMessageWithStatuses(messageId);
                   resolve(combined);
                 } catch (e) {
                   console.error(e);
-                  resolve(0);
+                  reject(0);
                 }
               }
-            },
+            }
           );
         }
-      },
+      }
     );
   });
 }
@@ -180,7 +180,7 @@ export function getAllMessages(limit = 100, offset = 0, roomId = null) {
   console.log(
     "Fetching messages with the following limit and offset:",
     lim,
-    off,
+    off
   );
 
   return new Promise((resolve, reject) => {
@@ -263,7 +263,7 @@ export function getMessageById(messageId) {
         } else {
           resolve(row ?? null);
         }
-      },
+      }
     );
   });
 }
@@ -293,7 +293,7 @@ export async function getMessageWithStatuses(messageId) {
             [];
           // determine sender status (status for the original userId)
           const senderStatusRow = statuses.find(
-            (s) => s.userId === message.userId,
+            (s) => s.userId === message.userId
           );
           const combined = {
             ...message,
@@ -302,7 +302,7 @@ export async function getMessageWithStatuses(messageId) {
           };
           resolve(combined);
         }
-      },
+      }
     );
   });
 }
@@ -344,7 +344,7 @@ export function searchMessages(q, limit, offset) {
         } else {
           resolve(rows);
         }
-      },
+      }
     );
   });
 }
@@ -424,10 +424,24 @@ export function markMessagesAsReadPrepared(statuses) {
                   db.run("COMMIT", () => resolve(1));
                 }
               }
-            },
+            }
           );
         });
       });
+    });
+  });
+}
+
+export function getUser(userId) {
+  return new Promise((resolve, reject) => {
+    const sql = `SELECT * FROM users WHERE userId = ?`;
+    db.get(sql, [userId], (err, row) => {
+      if (err) {
+        console.error(err);
+        reject(err);
+      } else {
+        resolve(row || null);
+      }
     });
   });
 }
@@ -448,7 +462,7 @@ export function addUser(userId, email, displayName) {
           console.log(`User added: ${this.changes}`);
           resolve({ userId, email, displayName, createdAt });
         }
-      },
+      }
     );
   });
 }
@@ -480,7 +494,7 @@ export function modifyUser(userId, updateInfo) {
           console.log(`User updated: ${this.changes} row(s)`);
           resolve(this.changes);
         }
-      },
+      }
     );
   });
 }
@@ -506,7 +520,7 @@ export function getRoomsByUserId(userId) {
           console.log(`Rooms fetched for userId ${userId}: ${rows.length}`);
           resolve(rows);
         }
-      },
+      }
     );
   });
 }
@@ -566,7 +580,7 @@ export function createRoom(name, userId, isPrivate = false) {
           console.log(`Room created: ${this.changes}`);
           resolve(roomId);
         }
-      },
+      }
     );
   });
 }
