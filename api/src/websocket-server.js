@@ -1,0 +1,327 @@
+import { Server } from "socket.io";
+import { websocketVerifyToken } from "./utilities/token-utilities.js";
+
+/**
+ * Copy and pasted from database/db/database.js will need refactoring later
+ * to avoid circular dependencies
+ * */
+export const MESSAGE_STATUS = Object.freeze({
+  SENT: "sent",
+  DELIVERED: "delivered",
+  READ: "read",
+});
+
+export default function createWebsocketServer(baseURL, API_KEY) {
+  // Create a web socket server and add its own cors policy
+  const io = new Server({
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type"],
+      credentials: true,
+    },
+  });
+
+  // Store typing users in memory (in production, consider using Redis for scaling)
+  /** @type {Map<string, Set<{socketId: string, userId: string}>>} */
+  const typingUsers = new Map(); // Map<roomId, Set<{socketId, userId}>>
+
+  // Helper function to clean up typing indicators for a socket
+  const cleanupTypingForSocket = (socketId) => {
+    for (const [roomId, users] of typingUsers.entries()) {
+      const userToRemove = Array.from(users).find(
+        (user) => user.socketId === socketId
+      );
+      if (userToRemove) {
+        users.delete(userToRemove);
+        // Broadcast typing stop to room
+        io.to(roomId).emit("typing:stop", {
+          userId: userToRemove.userId,
+          roomId: roomId,
+        });
+        // Clean up empty rooms
+        if (users.size === 0) {
+          typingUsers.delete(roomId);
+        }
+      }
+    }
+  };
+
+  // Helper function to add typing user
+  const addTypingUser = (roomId, socketId, userId) => {
+    if (!typingUsers.has(roomId)) {
+      typingUsers.set(roomId, new Set());
+    }
+    const users = typingUsers.get(roomId);
+
+    // Check if user is already typing in this room
+    // TODO optimize this lookup, currently O(n) won't scale well with many users
+    // Consider using a Map for users instead of Set for O(1) lookups
+    // e.g., Map<userId, socketId>
+    // But that would require more changes in the data structure
+    // For now, we keep it simple
+    const existingUser = Array.from(users).find(
+      (user) => user.userId === userId
+    );
+    if (!existingUser) {
+      users.add({ socketId, userId });
+      return true; // New typing user added
+    }
+    return false; // User was already typing
+  };
+
+  // Helper function to remove typing user
+  const removeTypingUser = (roomId, socketId, userId) => {
+    if (!typingUsers.has(roomId)) return false;
+
+    const users = typingUsers.get(roomId);
+    const userToRemove = Array.from(users).find(
+      (user) => user.socketId === socketId && user.userId === userId
+    );
+
+    if (userToRemove) {
+      users.delete(userToRemove);
+      // Clean up empty rooms
+      if (users.size === 0) {
+        typingUsers.delete(roomId);
+      }
+      return true; // User was removed
+    }
+    return false; // User wasn't found
+  };
+
+  // Middleware to verify Firebase ID token
+  io.use(websocketVerifyToken);
+
+  io.on("connection", (socket) => {
+    // console.log(`User ${socket.user.uid} connected`);
+    console.info(`[INFO] User connected: ${socket.id}`);
+    const connectedSockets = io.sockets.sockets;
+    console.info(`[INFO] Number of connected users: `, connectedSockets.size);
+    socket.broadcast.emit("userConnected", {
+      error: null,
+      message: { users: connectedSockets.size },
+    });
+    socket.emit("userConnected", {
+      error: null,
+      message: { users: connectedSockets.size },
+    });
+
+    // Handle joining rooms (for room-based typing indicators)
+    socket.on(
+      "join:room",
+      (/** @type {{ roomId: string, userId: string }} */ data) => {
+        const { roomId, userId } = data;
+        socket.join(roomId);
+        console.info(
+          `[INFO] Socket ${socket.id} with userId ${userId} joined room: ${roomId}`
+        );
+      }
+    );
+
+    // Handle leaving rooms
+    socket.on(
+      "leave:room",
+      (/** @type {{ roomId: string, userId: string }} */ data) => {
+        const { roomId, userId } = data;
+        socket.leave(roomId);
+        // Clean up any typing indicators for this user in this room
+        cleanupTypingForSocket(socket.id);
+        console.info(
+          `[INFO] Socket ${socket.id} with userId ${userId} left room: ${roomId}`
+        );
+      }
+    );
+
+    // Handle typing start
+    socket.on("typing:start", (data) => {
+      const { roomId, userId } = data;
+      console.info(`[INFO] User ${userId} started typing in room ${roomId}`);
+
+      // Add user to typing list
+      const isNewTyper = addTypingUser(roomId, socket.id, userId);
+
+      if (isNewTyper) {
+        // Broadcast to room (excluding sender)
+        socket.to(roomId).emit("typing:start", {
+          userId: userId,
+          roomId: roomId,
+        });
+      }
+    });
+
+    // Handle typing stop
+    socket.on("typing:stop", (data) => {
+      const { roomId, userId } = data;
+      console.info(`[INFO] User ${userId} stopped typing in room ${roomId}`);
+
+      // Remove user from typing list
+      const wasTyping = removeTypingUser(roomId, socket.id, userId);
+
+      if (wasTyping) {
+        // Broadcast to room (excluding sender)
+        socket.to(roomId).emit("typing:stop", {
+          userId: userId,
+          roomId: roomId,
+        });
+
+        // For global chat (backward compatibility)
+        if (roomId === "global") {
+          socket.broadcast.emit("typing:stop", {
+            userId: userId,
+            roomId: roomId,
+          });
+        }
+      }
+    });
+
+    socket.on("read", async (/** @type {{ statuses: any[] }} */ data) => {
+      const { statuses } = data;
+      console.info(`[INFO] Socket ${socket.id} read message: `, statuses);
+
+      if (!Array.isArray(statuses)) {
+        return;
+      }
+
+      if (
+        !statuses.every(
+          (status) =>
+            "messageId" in status && "userId" in status && "status" in status
+        )
+      ) {
+        return;
+      }
+
+      statuses.forEach((status) => {
+        status.status = MESSAGE_STATUS.READ;
+      });
+
+      // Update message statuses in the database
+      const result = await fetch(baseURL + "/messages/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+        body: JSON.stringify({ statuses: statuses }),
+      });
+
+      if (!result.ok) {
+        return;
+      }
+
+      const jsonResult = await result.json();
+      console.log("Status update results: ", jsonResult);
+      // Emit read receipt to all clients including sender
+      // Sender will ignore it if not needed
+      io.emit("read", { success: data });
+    });
+
+    socket.on("message", async (/** @type {Message} */ data) => {
+      console.info(`[INFO] Socket ${socket.id} sent: `, data);
+      const currTime = Date.now();
+      const {
+        messageId,
+        userId,
+        roomId,
+        content,
+        createdAt,
+        editedAt,
+        isDeleted,
+        statuses,
+      } = data;
+
+      // Stop typing indicator when message is sent
+      if (roomId && userId) {
+        const wasTyping = removeTypingUser(roomId, socket.id, userId);
+        if (wasTyping) {
+          socket.to(roomId).emit("typing:stop", {
+            userId: userId,
+            roomId: roomId,
+          });
+
+          // For global chat (backward compatibility)
+          if (roomId === "global") {
+            socket.broadcast.emit("typing:stop", {
+              userId: userId,
+              roomId: roomId,
+            });
+          }
+        }
+      }
+
+      /** @type {Message} */
+      const jsonBody = {
+        messageId:
+          messageId ||
+          `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        userId: userId || "anonymous",
+        roomId: roomId || "global",
+        content: content || "",
+        createdAt: createdAt || currTime,
+        editedAt: editedAt || null,
+        isDeleted: isDeleted || false,
+        statuses: statuses || [],
+        contentType: "text", // default to text for now
+      };
+      console.info("[INFO] Sending message to database: ", jsonBody);
+      const response = await fetch(baseURL + "/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": API_KEY },
+        body: JSON.stringify(jsonBody),
+      });
+      console.debug("[DEBUG] Response received: ", response.status);
+      if (response.ok) {
+        const dbMessage = await response.json();
+        console.info("[INFO] Message stored in database: ", dbMessage);
+
+        // Use the canonical DB message when broadcasting
+        const jsonData = { error: null, message: dbMessage };
+        console.info("[INFO] Broadcasting message: ", jsonData);
+
+        // Broadcast to specific room if roomId is provided
+        if (roomId) {
+          socket.to(roomId).emit("message", jsonData);
+          socket.emit("delivered", {
+            success: {
+              statuses: jsonData.message.statuses.map((status) => ({
+                messageId: jsonData.message.messageId,
+                userId: status.userId,
+                status: "delivered",
+              })),
+            },
+          });
+        }
+      } else {
+        console.error(
+          "[ERROR] Failed to store message in DB. Status:",
+          response.status
+        );
+      }
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.info("[INFO] User disconnected: ", socket.id, reason);
+
+      // Clean up any typing indicators for this socket
+      cleanupTypingForSocket(socket.id);
+
+      // Get updated count after disconnect
+      const updatedConnectedSockets = io.sockets.sockets;
+      socket.broadcast.emit("userDisconnected", {
+        error: null,
+        message: {
+          users: updatedConnectedSockets.size,
+          // @ts-ignore
+          userId: socket.user?.uid || socket.id, // Include disconnected user info if available
+        },
+      });
+    });
+
+    // Handle errors
+    socket.on("error", (error) => {
+      console.error(`[ERROR] Socket ${socket.id} error:`, error);
+      // Clean up typing indicators on error
+      cleanupTypingForSocket(socket.id);
+    });
+  });
+
+  return io;
+}
