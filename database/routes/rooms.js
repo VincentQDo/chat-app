@@ -77,11 +77,10 @@ router.get("/user/:userId", async (req, res) => {
 });
 
 /**
- * Update room name
+ * Add participant to a room
  */
 router.put("/participant", async (req, res) => {
-  const { roomId } = req.body;
-  const { userId } = req.body;
+  const { roomId, userId } = req.body;
   try {
     const result = await addParticipantToRoom(roomId, userId);
     res.json({ message: "Room updated", result });

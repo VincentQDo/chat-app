@@ -16,11 +16,14 @@ router.post("/", async (req, res) => {
   }
 });
 
+/**
+ * Update user info
+ */
 router.put("/:userId", async (req, res) => {
   const { userId } = req.params;
   const { email, displayName, photoURL } = req.body;
   try {
-    const result = await modifyUser(userId, email, displayName, photoURL);
+    const result = await modifyUser(userId, { email, displayName, photoURL });
     if (result === -1) {
       res.status(404).json({ error: "User not found" });
     } else {
