@@ -56,6 +56,7 @@ export async function validateToken(token: string | null): Promise<AuthResult> {
         if (response.status === 200) {
             return { error: null, user: auth.currentUser }
         } else {
+            auth.updateCurrentUser(null);
             return { error: response.statusText, user: null }
         }
     } catch (error: any) {

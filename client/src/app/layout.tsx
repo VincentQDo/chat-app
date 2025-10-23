@@ -3,8 +3,13 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import AuthProvider from "@/lib/auth-provider";
+import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Banter Box",
@@ -18,14 +23,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={cn(
-        "font-sans antialiased",
-        inter.variable
-      )}>
+      <body className={cn("font-sans antialiased", inter.variable)}>
         <div>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <Toaster richColors closeButton position="top-center"></Toaster>
+          <AuthProvider>{children}</AuthProvider>
         </div>
       </body>
     </html>
